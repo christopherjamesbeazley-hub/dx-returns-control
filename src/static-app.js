@@ -4,6 +4,7 @@ import {
   buildAiNarrative,
   buildForecastNarrative,
   buildIssueSummary,
+  buildLlmBrief,
   buildReturnCsvTemplate,
   buildStakeholderReport,
   buildTrendSnapshots,
@@ -58,6 +59,12 @@ const state = {
   sourceName: "Synthetic demo CSV",
   loadError: "",
   validation: null,
+  llm: {
+    status: "idle",
+    output: "",
+    error: "",
+    model: "",
+  },
 };
 
 async function boot() {
@@ -88,6 +95,8 @@ function render() {
   const forecastNarrative = buildForecastNarrative({ riskForecast, trends, warnings });
   const roi = calculateRoi(state.roiInputs);
   const promptFindings = getPromptSecurityFindings(state.returns);
+  const llmBrief = buildLlmBrief({ kpis, themes: delayThemes, marketBreakdown, partnerPerformance, worklist, promptFindings });
+  state.currentLlmBrief = llmBrief;
 
   root.innerHTML = `
     <main class="shell">
@@ -125,9 +134,9 @@ function render() {
         ${kpiCard("Overdue exposure", formatCurrency(kpis.overdueExposure), "danger", "EX")}
       </section>
 
-      ${state.activeRole === "manager" ? managerView({ aiNarrative, delayThemes, digest, filteredReturns, forecastNarrative, kpis, paginatedReturns, riskForecast, stakeholderReport, worklist }) : ""}
+      ${state.activeRole === "manager" ? managerView({ aiNarrative, delayThemes, digest, filteredReturns, forecastNarrative, kpis, llmState: state.llm, paginatedReturns, riskForecast, stakeholderReport, worklist }) : ""}
       ${state.activeRole === "coordinator" ? coordinatorView({ filteredReturns, paginatedReturns, worklist }) : ""}
-      ${state.activeRole === "leadership" ? leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, improvementActions, kpis, marketBreakdown, partnerPerformance, riskForecast, roi, stakeholderReport, trends, warnings, worklist }) : ""}
+      ${state.activeRole === "leadership" ? leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, improvementActions, kpis, llmState: state.llm, marketBreakdown, partnerPerformance, riskForecast, roi, stakeholderReport, trends, warnings, worklist }) : ""}
     </main>
   `;
 
@@ -221,7 +230,7 @@ function promptSecurityPanel(findings) {
   `;
 }
 
-function managerView({ aiNarrative, delayThemes, digest, filteredReturns, forecastNarrative, kpis, paginatedReturns, riskForecast, stakeholderReport, worklist }) {
+function managerView({ aiNarrative, delayThemes, digest, filteredReturns, forecastNarrative, kpis, llmState, paginatedReturns, riskForecast, stakeholderReport, worklist }) {
   return `
     <section class="two-column">
       ${weeklyDigest(digest)}
@@ -235,6 +244,7 @@ function managerView({ aiNarrative, delayThemes, digest, filteredReturns, foreca
     </section>
     ${phase4CompactPanel({ forecastNarrative, riskForecast })}
     ${aiAssistPanel({ aiNarrative, delayThemes, worklist })}
+    ${externalLlmPanel(llmState)}
     ${reportPanel(stakeholderReport)}
     <section class="panel">
       <div class="panel-heading">
@@ -285,7 +295,7 @@ function coordinatorView({ filteredReturns, paginatedReturns, worklist }) {
   `;
 }
 
-function leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, improvementActions, kpis, marketBreakdown, partnerPerformance, riskForecast, roi, stakeholderReport, trends, warnings, worklist }) {
+function leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, improvementActions, kpis, llmState, marketBreakdown, partnerPerformance, riskForecast, roi, stakeholderReport, trends, warnings, worklist }) {
   const highValueItems = worklist.filter((item) => item.highValue).slice(0, 5);
 
   return `
@@ -302,6 +312,7 @@ function leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, i
         <div class="source-tags"><span>Notes</span><span>Status history</span><span>Delay reason</span><span>Record link</span></div>
       </div>
     </section>
+    ${externalLlmPanel(llmState)}
     ${themePanel(delayThemes)}
     ${reportPanel(stakeholderReport, true)}
     <section class="three-column">
@@ -528,6 +539,35 @@ function issueSummaryCard(summary) {
   `;
 }
 
+function externalLlmPanel(llmState) {
+  const isLoading = llmState.status === "loading";
+  const disabled = !state.returns.length || isLoading;
+  const statusText = {
+    idle: "Optional external LLM bridge. Server-side configuration required.",
+    loading: "Sending sanitized evidence brief to the configured server-side LLM endpoint.",
+    ready: `External LLM draft returned${llmState.model ? ` from ${llmState.model}` : ""}. Review before use.`,
+    error: "External LLM is unavailable or not configured.",
+    copied: "Sanitized evidence brief copied for manual LLM testing.",
+  }[llmState.status] ?? "Optional external LLM bridge. Server-side configuration required.";
+
+  return `
+    <section class="panel llm-panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">External LLM bridge</p><h3>Governed narrative generation</h3></div>
+        <span class="glyph">LLM</span>
+      </div>
+      <p>${escapeHtml(statusText)}</p>
+      <div class="llm-actions">
+        <button class="text-button" data-run-llm type="button" ${disabled ? "disabled" : ""}><span class="glyph">AI</span><span>${isLoading ? "Working" : "Ask LLM"}</span></button>
+        <button class="text-button" data-copy-llm-brief type="button" ${!state.returns.length ? "disabled" : ""}><span class="glyph">CP</span><span>Copy evidence pack</span></button>
+      </div>
+      <div class="source-tags"><span>Sanitized facts</span><span>No raw notes</span><span>Server-side key</span><span>Human review</span></div>
+      ${llmState.error ? `<em class="llm-error">${escapeHtml(llmState.error)}</em>` : ""}
+      ${llmState.output ? `<pre class="llm-output">${escapeHtml(llmState.output)}</pre>` : ""}
+    </section>
+  `;
+}
+
 function reportPanel(stakeholderReport, compact = false) {
   return `
     <section class="panel report-panel">
@@ -748,6 +788,8 @@ function bindEvents() {
   document.querySelectorAll("[data-copy-draft]").forEach((button) => {
     button.addEventListener("click", () => copyDraft(button.dataset.copyDraft));
   });
+  document.querySelector("[data-run-llm]")?.addEventListener("click", runExternalLlm);
+  document.querySelector("[data-copy-llm-brief]")?.addEventListener("click", copyLlmBrief);
 }
 
 async function handleCsvUpload(event) {
@@ -804,6 +846,56 @@ function downloadReport() {
   const partnerPerformance = getPartnerPerformance(state.returns);
   const report = buildStakeholderReport({ kpis, marketBreakdown, partnerPerformance, worklist });
   downloadText("dx-returns-weekly-report.txt", report, "text/plain");
+}
+
+async function runExternalLlm() {
+  if (!state.returns.length) {
+    state.llm = { status: "error", output: "", error: "Load returns data before requesting an LLM narrative.", model: "" };
+    render();
+    return;
+  }
+
+  state.llm = { status: "loading", output: "", error: "", model: "" };
+  render();
+
+  try {
+    const response = await fetch("/api/llm/weekly-summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brief: buildCurrentLlmBrief() }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) {
+      throw new Error(result.message || "External LLM request failed.");
+    }
+    state.llm = { status: "ready", output: result.output, error: "", model: result.model || "" };
+  } catch (error) {
+    state.llm = { status: "error", output: "", error: error.message, model: "" };
+  }
+
+  render();
+}
+
+async function copyLlmBrief() {
+  const brief = JSON.stringify(buildCurrentLlmBrief(), null, 2);
+  try {
+    await navigator.clipboard.writeText(brief);
+    state.llm = { ...state.llm, status: "copied", error: "" };
+  } catch {
+    downloadText("dx-returns-llm-evidence-pack.json", brief, "application/json");
+    state.llm = { ...state.llm, status: "copied", error: "" };
+  }
+  render();
+}
+
+function buildCurrentLlmBrief() {
+  const kpis = calculateKpis(state.returns);
+  const worklist = getOverdueWorklist(state.returns);
+  const marketBreakdown = getMarketBreakdown(state.returns);
+  const partnerPerformance = getPartnerPerformance(state.returns);
+  const themes = getDelayThemes(state.returns);
+  const promptFindings = getPromptSecurityFindings(state.returns);
+  return buildLlmBrief({ kpis, themes, marketBreakdown, partnerPerformance, worklist, promptFindings });
 }
 
 async function copyDraft(index) {

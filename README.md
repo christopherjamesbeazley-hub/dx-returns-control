@@ -23,6 +23,7 @@ The original implementation target was React/Vite. In this workspace, npm regist
 - Top-10% high-value exposure flag among open returns.
 - Weekly digest-style stakeholder summary.
 - Deterministic Phase 3 AI-assist summaries that keep humans in control and disclose source fields.
+- Optional server-side external LLM bridge for a governed weekly narrative.
 - Prompt-injection guardrails for uploaded notes, delay reasons, status text, and item descriptions.
 - Recurring delay theme detection for operational pattern review.
 - Phase 4 explainable risk scoring, trend snapshots, early-warning signals, and continuous-improvement actions.
@@ -67,6 +68,7 @@ Uploaded CSV files are loaded only in the browser session. They do not overwrite
 - High-value exposure is the top 10% of open returns by `value_eur`.
 - Phase 2 exports and draft messages are generated from the loaded dataset for human review only.
 - Phase 3 AI-assist outputs are deterministic summaries from loaded CSV fields, not external AI API responses.
+- External LLM generation is optional and requires server-side environment variables; API keys are never stored in browser code.
 - AI-assist confidence is limited when due date, notes, or delay reason are missing.
 - AI-assist confidence is also limited when uploaded text resembles prompt injection, jailbreak, secret extraction, or tool-misuse instructions.
 - Phase 4 forecast output is deterministic prioritization, not an autonomous predictive model.
@@ -81,6 +83,18 @@ Uploaded CSV files are loaded only in the browser session. They do not overwrite
 ## Security Notes
 
 `SECURITY.md` documents the prompt-injection, prompt-leakage, and jailbreak guardrails used in the prototype, plus the controls required before any real LLM integration.
+
+## Optional External LLM Bridge
+
+The app can call a server-side, OpenAI-compatible chat-completions endpoint when these environment variables are configured:
+
+- `LLM_API_URL`
+- `LLM_API_KEY`
+- `LLM_MODEL`
+
+For OpenAI specifically, `OPENAI_API_KEY` and `OPENAI_MODEL` are also recognized; the server defaults the URL to `https://api.openai.com/v1/chat/completions` when `OPENAI_API_KEY` is present. Do not expose keys in browser JavaScript or commit them to Git.
+
+The browser sends a sanitized evidence pack to `/api/llm/weekly-summary`. The pack contains KPI totals, themes, market/partner signals, and top worklist rows. It does not send raw notes, and prompt-security flagged free text is withheld.
 
 ## Commands
 

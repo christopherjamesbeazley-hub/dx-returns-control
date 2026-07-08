@@ -929,6 +929,55 @@ td small {
   line-height: 1.55;
 }
 
+.llm-panel {
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, #ffffff, #f8fbff);
+}
+
+.llm-panel p {
+  color: #42535a;
+  line-height: 1.55;
+}
+
+.llm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.llm-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.llm-error {
+  display: block;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e0b5ad;
+  border-radius: 8px;
+  color: #81281f;
+  background: #fff6f4;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.llm-output {
+  max-height: 320px;
+  overflow: auto;
+  margin: 14px 0 0;
+  padding: 14px;
+  border: 1px solid #d9e5e8;
+  border-radius: 8px;
+  color: #22343a;
+  background: #f9fcfb;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .report-panel {
   margin-bottom: 18px;
 }
@@ -1077,6 +1126,7 @@ td small {
 
   .automation-bar,
   .automation-actions,
+  .llm-actions,
   .security-panel,
   .theme-list li {
     display: grid;

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.env
+.env.local
 server.log
 server.err
 npm-debug.log*

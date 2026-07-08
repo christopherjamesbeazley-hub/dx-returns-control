@@ -20,6 +20,7 @@ The concept is assumption-led and uses synthetic data only. It does not claim ac
 - Escalation worklist export and weekly stakeholder report export.
 - Human-reviewed draft escalation messages.
 - Deterministic AI-assist summaries with source fields and confidence warnings.
+- Optional server-side LLM bridge for human-reviewed narrative generation.
 - Prompt-injection and jailbreak guardrails for uploaded operational notes.
 - Recurring delay theme detection.
 - Explainable Phase 4 risk scoring and early-warning signals.
@@ -57,4 +58,4 @@ The strongest pitch is not "AI replaces returns work." The strongest pitch is:
 
 > Operations first, AI second. Make returns visible, measurable, and actionable before adding source-grounded AI assistance.
 
-AI outputs must remain traceable to source fields, reviewable by humans, protected against prompt injection, and blocked from autonomous operational decisions.
+AI outputs must remain traceable to source fields, reviewable by humans, protected against prompt injection, and blocked from autonomous operational decisions. External LLM use should receive sanitized evidence packs, not raw exports.

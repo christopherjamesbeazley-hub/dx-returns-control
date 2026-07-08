@@ -38,6 +38,7 @@
 - Added confidence and source-field disclosure for each summary.
 - Added prompt-security checks for prompt-injection, prompt-leakage, jailbreak, tool-misuse, and output-manipulation language in uploaded text fields.
 - Added visible dashboard guardrails and limited-confidence warnings when suspicious prompt-like text is found.
+- Added an optional server-side external LLM bridge that uses a sanitized evidence pack and keeps API keys out of browser code.
 - Added recurring delay theme detection.
 - Added AI-assist weekly narrative.
 - Added dashboard panels for source-grounded summaries and recurring themes.
@@ -82,7 +83,8 @@
 
 - No real Philips data is used.
 - No real API, SharePoint, Power BI, Teams, Outlook, ERP, or DX Returns Manager integration is implemented.
-- No AI API is called.
+- No AI API is called in the default configuration.
+- External LLM calls occur only when server-side environment variables are configured.
 - Uploaded operational notes and delay reasons are treated as untrusted source data, not AI instructions.
 - No outbound message is sent automatically.
 - The app stores uploaded CSV data only in the current browser session.

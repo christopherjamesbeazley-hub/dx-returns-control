@@ -40,6 +40,7 @@ The prototype uses synthetic data only. It does not claim access to Philips inte
 - Generate a weekly AI-assist narrative for leadership review.
 - Keep every AI-style output traceable to source fields.
 - Treat uploaded notes, delay reasons, statuses, and item descriptions as untrusted text and flag prompt-injection or jailbreak-style content.
+- Optionally send a sanitized evidence pack to a server-side external LLM endpoint for a human-reviewed weekly narrative.
 - Do not send messages, close returns, assign blame, make financial decisions, or update source systems automatically.
 
 ## Phase 4: Forecasting And Continuous Improvement
@@ -63,6 +64,7 @@ The prototype uses synthetic data only. It does not claim access to Philips inte
 - The app includes an ROI calculator and a one-page pitch artifact.
 - AI-assist outputs remain deterministic, source-grounded, and human-reviewed.
 - Prompt-security guardrails are visible in the dashboard and covered by tests.
+- The external LLM bridge is optional, server-side, key-safe, and uses a sanitized evidence pack rather than raw CSV rows.
 - Phase 4 risk scores remain explainable and show their drivers.
 - Forecasting language is presented as a prioritization signal, not an autonomous prediction.
 - Tests cover parsing, SLA classification, KPI calculations, Phase 2 exports/reports, and Phase 3 AI-assist outputs.

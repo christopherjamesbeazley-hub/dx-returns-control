@@ -1,6 +1,6 @@
 # Security And Prompt-Safety Notes
 
-This prototype is built with synthetic data only and does not call an external LLM. The current "AI assist" layer is deterministic text generation from loaded CSV fields. That keeps the demo safe while still showing how AI-style summaries, themes, and risk narratives could support a returns control process.
+This prototype is built with synthetic data only. The default "AI assist" layer is deterministic text generation from loaded CSV fields. An optional server-side external LLM bridge can be enabled with environment variables, but the demo remains usable without it.
 
 ## Current Controls
 
@@ -9,11 +9,15 @@ This prototype is built with synthetic data only and does not call an external L
 - Flagged rows appear in the dashboard prompt-security panel.
 - Flagged issue summaries are marked with limited confidence.
 - AI-assist summaries disclose the source fields used.
+- The optional LLM bridge receives a sanitized evidence pack, not the full CSV.
+- Raw notes are not included in the LLM evidence pack.
+- Prompt-security flagged free text is withheld from the LLM evidence pack.
+- API keys stay server-side and must never be committed or exposed in browser JavaScript.
 - No uploaded text is treated as a system instruction or developer instruction.
 - No automated outbound messages, source-system updates, return closures, or financial decisions are performed.
 - Uploaded files replace only the in-memory browser session dataset.
 
-## Future LLM Integration Rules
+## LLM Integration Rules
 
 If this concept is connected to a real LLM, the integration should follow these rules before any production pilot:
 
