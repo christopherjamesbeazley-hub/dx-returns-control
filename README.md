@@ -22,6 +22,7 @@ The original implementation target was React/Vite. In this workspace, npm regist
 - Top-10% high-value exposure flag among open returns.
 - Weekly digest-style stakeholder summary.
 - Deterministic Phase 3 AI-assist summaries that keep humans in control and disclose source fields.
+- Prompt-injection guardrails for uploaded notes, delay reasons, status text, and item descriptions.
 - Recurring delay theme detection for operational pattern review.
 - Phase 4 explainable risk scoring, trend snapshots, early-warning signals, and continuous-improvement actions.
 - ROI calculator for a simple annual value estimate.
@@ -66,6 +67,7 @@ Uploaded CSV files are loaded only in the browser session. They do not overwrite
 - Phase 2 exports and draft messages are generated from the loaded dataset for human review only.
 - Phase 3 AI-assist outputs are deterministic summaries from loaded CSV fields, not external AI API responses.
 - AI-assist confidence is limited when due date, notes, or delay reason are missing.
+- AI-assist confidence is also limited when uploaded text resembles prompt injection, jailbreak, secret extraction, or tool-misuse instructions.
 - Phase 4 forecast output is deterministic prioritization, not an autonomous predictive model.
 - Risk scores show their drivers and are intended for control-meeting review.
 - Uploaded CSVs are validated against the expected schema before replacing the in-memory dataset.
@@ -74,6 +76,10 @@ Uploaded CSV files are loaded only in the browser session. They do not overwrite
 ## Pitch Artifact
 
 `pitch.md` contains a one-page business pitch that can be adapted for a job interview, Philips follow-up, portfolio case study, or pilot proposal.
+
+## Security Notes
+
+`SECURITY.md` documents the prompt-injection, prompt-leakage, and jailbreak guardrails used in the prototype, plus the controls required before any real LLM integration.
 
 ## Commands
 

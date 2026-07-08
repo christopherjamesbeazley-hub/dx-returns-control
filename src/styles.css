@@ -157,6 +157,58 @@ h3 {
   line-height: 1.5;
 }
 
+.security-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid #cfe3dc;
+  border-radius: 8px;
+  background: #f7fcfa;
+  box-shadow: 0 10px 24px rgba(32, 57, 62, 0.06);
+}
+
+.security-panel.active {
+  border-color: #e6b85f;
+  background: #fffaf0;
+}
+
+.security-panel p:last-child {
+  max-width: 820px;
+  margin-bottom: 0;
+  color: #52616a;
+  line-height: 1.5;
+}
+
+.security-panel ul {
+  display: grid;
+  gap: 8px;
+  min-width: min(420px, 100%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.security-panel li {
+  padding: 10px 12px;
+  border: 1px solid rgba(190, 157, 80, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.security-panel strong,
+.security-panel span {
+  display: block;
+}
+
+.security-panel li span {
+  margin-top: 3px;
+  color: #6b5b32;
+  font-size: 0.84rem;
+}
+
 .role-button,
 .icon-button,
 .text-button,
@@ -477,6 +529,14 @@ h3 {
   color: #63727a;
   font-size: 0.84rem;
   font-style: normal;
+}
+
+.summary-card .security-warning {
+  padding: 9px 10px;
+  border: 1px solid #e6c86c;
+  border-radius: 8px;
+  color: #604b12;
+  background: #fff8df;
 }
 
 .theme-list {
@@ -1006,6 +1066,7 @@ td small {
 
   .automation-bar,
   .automation-actions,
+  .security-panel,
   .theme-list li {
     display: grid;
     justify-content: stretch;

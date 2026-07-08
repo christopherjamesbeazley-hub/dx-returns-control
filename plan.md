@@ -39,6 +39,7 @@ The prototype uses synthetic data only. It does not claim access to Philips inte
 - Detect recurring delay themes such as missing export documentation, customs processing, pickup/site access, inspection backlog, missing due dates, and market approval.
 - Generate a weekly AI-assist narrative for leadership review.
 - Keep every AI-style output traceable to source fields.
+- Treat uploaded notes, delay reasons, statuses, and item descriptions as untrusted text and flag prompt-injection or jailbreak-style content.
 - Do not send messages, close returns, assign blame, make financial decisions, or update source systems automatically.
 
 ## Phase 4: Forecasting And Continuous Improvement
@@ -61,6 +62,7 @@ The prototype uses synthetic data only. It does not claim access to Philips inte
 - Users can export the escalation worklist and weekly report.
 - The app includes an ROI calculator and a one-page pitch artifact.
 - AI-assist outputs remain deterministic, source-grounded, and human-reviewed.
+- Prompt-security guardrails are visible in the dashboard and covered by tests.
 - Phase 4 risk scores remain explainable and show their drivers.
 - Forecasting language is presented as a prioritization signal, not an autonomous prediction.
 - Tests cover parsing, SLA classification, KPI calculations, Phase 2 exports/reports, and Phase 3 AI-assist outputs.
@@ -72,5 +74,6 @@ The prototype uses synthetic data only. It does not claim access to Philips inte
 - Synthetic data is clearly labeled.
 - Real deployments must define data privacy, access control, retention, and audit logging.
 - AI outputs must cite or disclose the fields used.
+- Uploaded operational text must never be treated as model instructions.
 - Missing data is surfaced rather than hidden or guessed.
 - Partner and market scorecards must use agreed definitions before they are used for performance management.

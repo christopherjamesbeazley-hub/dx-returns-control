@@ -36,10 +36,12 @@
 
 - Added deterministic issue summaries for top worklist items.
 - Added confidence and source-field disclosure for each summary.
+- Added prompt-security checks for prompt-injection, prompt-leakage, jailbreak, tool-misuse, and output-manipulation language in uploaded text fields.
+- Added visible dashboard guardrails and limited-confidence warnings when suspicious prompt-like text is found.
 - Added recurring delay theme detection.
 - Added AI-assist weekly narrative.
 - Added dashboard panels for source-grounded summaries and recurring themes.
-- Added tests for issue summaries, delay themes, and AI narrative generation.
+- Added tests for issue summaries, prompt-security detection, delay themes, and AI narrative generation.
 
 ## Phase 4 Completed
 
@@ -80,5 +82,6 @@
 - No real Philips data is used.
 - No real API, SharePoint, Power BI, Teams, Outlook, ERP, or DX Returns Manager integration is implemented.
 - No AI API is called.
+- Uploaded operational notes and delay reasons are treated as untrusted source data, not AI instructions.
 - No outbound message is sent automatically.
 - The app stores uploaded CSV data only in the current browser session.

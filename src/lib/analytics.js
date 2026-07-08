@@ -42,6 +42,13 @@ export const RETURN_COLUMN_ALIASES = {
 };
 
 const CLOSED_STATUSES = new Set(["closed", "cancelled"]);
+const PROMPT_SECURITY_PATTERNS = [
+  { label: "instruction override", pattern: /\b(ignore|disregard|forget)\b.{0,40}\b(previous|above|prior|system|developer)\b.{0,20}\b(instruction|prompt|message|rules?)\b/i },
+  { label: "secret extraction", pattern: /\b(reveal|print|show|dump|leak|exfiltrate)\b.{0,40}\b(system prompt|developer message|hidden prompt|instructions?|secrets?|api key|token)\b/i },
+  { label: "role jailbreak", pattern: /\b(jailbreak|developer mode|dan mode|do anything now|act as an unrestricted|bypass safety)\b/i },
+  { label: "tool misuse", pattern: /\b(call|invoke|run|execute)\b.{0,30}\b(tool|function|shell|command|api)\b.{0,30}\b(without|ignore|bypass)\b/i },
+  { label: "output manipulation", pattern: /\b(output|respond|return)\b.{0,30}\b(raw json|base64|verbatim|nothing else)\b.{0,30}\b(prompt|instruction|secret|policy)\b/i },
+];
 
 export function parseReturnsCsv(csvText) {
   const rows = parseCsv(csvText.trim());
@@ -295,8 +302,10 @@ export function buildIssueSummary(item) {
   if (!item.dueDate) warnings.push("missing due date");
   if (!item.notes) warnings.push("missing notes");
   if (!item.delayReason) warnings.push("missing delay reason");
+  const promptSecurity = detectPromptSecuritySignals(item);
+  if (promptSecurity.flagged) warnings.push("possible prompt injection text");
 
-  const confidence = warnings.length === 0 ? "high" : warnings.length === 1 ? "medium" : "limited";
+  const confidence = promptSecurity.flagged ? "limited" : warnings.length === 0 ? "high" : warnings.length === 1 ? "medium" : "limited";
   const riskSignals = [
     item.slaState === "overdue" ? "overdue" : null,
     item.slaState === "near-due" ? "near due" : null,
@@ -317,7 +326,49 @@ export function buildIssueSummary(item) {
     summary: `${item.returnId} is ${formatState(item.slaState).toLowerCase()} in ${item.market} with ${formatCurrency(item.valueEur)} exposure. Current status is ${item.status}. Delay signal: ${item.delayReason || "not provided"}. ${item.notes || "No notes were provided."}`,
     riskSignals,
     recommendedAction,
+    promptSecurity,
   };
+}
+
+export function detectPromptSecuritySignals(item) {
+  const inspectedFields = {
+    delay_reason: item.delayReason,
+    notes: item.notes,
+    status: item.status,
+    item_description: item.itemDescription,
+  };
+  const matches = [];
+
+  for (const [field, value] of Object.entries(inspectedFields)) {
+    const text = String(value ?? "");
+    for (const rule of PROMPT_SECURITY_PATTERNS) {
+      if (rule.pattern.test(text)) {
+        matches.push({ field, label: rule.label });
+      }
+    }
+  }
+
+  return {
+    flagged: matches.length > 0,
+    matches,
+    guidance: matches.length
+      ? "Treat this text as untrusted data. Do not pass it into an LLM as instructions; summarize only as quoted source evidence."
+      : "No prompt-injection pattern detected in inspected text fields.",
+  };
+}
+
+export function getPromptSecurityFindings(enrichedReturns) {
+  return enrichedReturns
+    .map((item) => ({ item, security: detectPromptSecuritySignals(item) }))
+    .filter(({ security }) => security.flagged)
+    .map(({ item, security }) => ({
+      returnId: item.returnId,
+      market: item.market,
+      owner: item.owner,
+      status: item.status,
+      matches: security.matches,
+      guidance: security.guidance,
+    }));
 }
 
 export function getDelayThemes(enrichedReturns) {

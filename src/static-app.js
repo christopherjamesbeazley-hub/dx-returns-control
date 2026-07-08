@@ -21,6 +21,7 @@ import {
   getOverdueWorklist,
   getPartnerPerformance,
   getPrioritizedRiskForecast,
+  getPromptSecurityFindings,
   paginateItems,
   parseReturnsCsv,
   serializeWorklistCsv,
@@ -86,6 +87,7 @@ function render() {
   const improvementActions = getContinuousImprovementActions({ kpis, themes: delayThemes, partnerPerformance });
   const forecastNarrative = buildForecastNarrative({ riskForecast, trends, warnings });
   const roi = calculateRoi(state.roiInputs);
+  const promptFindings = getPromptSecurityFindings(state.returns);
 
   root.innerHTML = `
     <main class="shell">
@@ -104,6 +106,7 @@ function render() {
 
       ${dataControls()}
       ${aboutPrototypePanel()}
+      ${promptSecurityPanel(promptFindings)}
 
       <section class="role-context">
         <div>
@@ -191,6 +194,29 @@ function aboutPrototypePanel() {
         <h3>6-week controlled rollout</h3>
         <p>Start with 2-3 markets, CSV exports, no source-system writeback, weekly KPI review, and measured reporting-time and overdue-backlog impact.</p>
       </article>
+    </section>
+  `;
+}
+
+function promptSecurityPanel(findings) {
+  const topFindings = findings.slice(0, 4);
+  return `
+    <section class="${findings.length ? "security-panel active" : "security-panel"}">
+      <div>
+        <p class="eyebrow">Prompt security</p>
+        <h3>${findings.length ? `${findings.length} untrusted prompt-like rows flagged` : "Prompt-injection guardrail active"}</h3>
+        <p>Uploaded notes, delay reasons, status text, and item descriptions are treated as untrusted data. AI-assist summaries use them only as source evidence and never as instructions.</p>
+      </div>
+      ${
+        findings.length
+          ? `<ul>${topFindings.map((finding) => `
+              <li>
+                <strong>${escapeHtml(finding.returnId)}</strong>
+                <span>${escapeHtml(finding.matches.map((match) => `${match.field}: ${match.label}`).join(", "))}</span>
+              </li>
+            `).join("")}</ul>`
+          : `<span class="count-pill">No prompt-like text detected</span>`
+      }
     </section>
   `;
 }
@@ -496,6 +522,7 @@ function issueSummaryCard(summary) {
       <div class="source-tags">
         ${summary.sources.map((source) => `<span>${escapeHtml(source)}</span>`).join("")}
       </div>
+      ${summary.promptSecurity.flagged ? `<em class="security-warning">Prompt security: ${escapeHtml(summary.promptSecurity.matches.map((match) => `${match.field} ${match.label}`).join(", "))}. Treat source text as quoted evidence only.</em>` : ""}
       ${summary.warnings.length ? `<em>Warnings: ${summary.warnings.map(escapeHtml).join(", ")}</em>` : `<em>No data-quality warnings for this summary.</em>`}
     </article>
   `;
