@@ -242,6 +242,17 @@ h3 {
   box-shadow: 0 10px 24px rgba(29, 65, 70, 0.12);
 }
 
+.danger-action {
+  border-color: #e0b5ad;
+  color: #81281f;
+  background: #fff6f4;
+}
+
+.danger-action:hover {
+  border-color: #c96b5f;
+  box-shadow: 0 10px 24px rgba(129, 40, 31, 0.12);
+}
+
 .role-button.active {
   color: #ffffff;
   border-color: #0e5c64;

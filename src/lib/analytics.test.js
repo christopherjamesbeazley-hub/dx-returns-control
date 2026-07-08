@@ -78,6 +78,22 @@ test("calculates stable KPI totals for the original seed records", () => {
   assert.equal(seedKpis.overdueExposure, 315700);
 });
 
+test("handles an erased in-memory session as an empty dashboard state", () => {
+  const empty = enrichReturns([], SNAPSHOT_DATE);
+  const emptyKpis = calculateKpis(empty);
+  const page = paginateItems(empty, 1, 25);
+
+  assert.equal(emptyKpis.openCount, 0);
+  assert.equal(emptyKpis.closedCount, 0);
+  assert.equal(emptyKpis.overdueCount, 0);
+  assert.equal(emptyKpis.averageAgeDays, 0);
+  assert.equal(emptyKpis.oldestOpenId, "n/a");
+  assert.deepEqual(getOverdueWorklist(empty), []);
+  assert.deepEqual(getMarketBreakdown(empty), []);
+  assert.equal(page.totalItems, 0);
+  assert.equal(page.totalPages, 1);
+});
+
 test("flags the top 10 percent of seed open returns as high-value exposure", () => {
   const highValueIds = seedEnriched.filter((item) => item.highValue).map((item) => item.returnId);
   assert.deepEqual(highValueIds, ["DXR-1001", "DXR-1012", "DXR-1019"]);

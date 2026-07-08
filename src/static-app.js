@@ -150,7 +150,7 @@ function dataControls() {
       <div>
         <p class="eyebrow">Phase 2 automation</p>
         <strong>${escapeHtml(state.sourceName)}</strong>
-        <span>${state.returns.length} rows loaded. Upload replaces the in-memory dataset only.</span>
+        <span>${state.returns.length ? `${state.returns.length} rows loaded. Upload replaces the in-memory dataset only.` : "Session is empty. Upload a CSV to rebuild the dashboard, or refresh the page to reload the demo dataset."}</span>
         ${validation ? validationSummary(validation) : ""}
         ${state.loadError ? `<em>${escapeHtml(state.loadError)}</em>` : ""}
       </div>
@@ -161,7 +161,7 @@ function dataControls() {
           <span>Upload CSV</span>
           <input data-upload-csv type="file" accept=".csv,text/csv,.xlsx,.xls" />
         </label>
-        <button class="text-button" data-reset-demo type="button"><span class="glyph">RS</span><span>Reset demo</span></button>
+        <button class="text-button danger-action" data-erase-session type="button"><span class="glyph">CL</span><span>Erase all</span></button>
       </div>
     </section>
   `;
@@ -740,7 +740,7 @@ function bindEvents() {
 
   document.querySelector("[data-upload-csv]")?.addEventListener("change", handleCsvUpload);
   document.querySelector("[data-download-template]")?.addEventListener("click", downloadTemplate);
-  document.querySelector("[data-reset-demo]")?.addEventListener("click", resetDemoData);
+  document.querySelector("[data-erase-session]")?.addEventListener("click", eraseSessionData);
   document.querySelector("[data-export-worklist]")?.addEventListener("click", exportWorklist);
   document.querySelectorAll("[data-download-report]").forEach((button) => {
     button.addEventListener("click", downloadReport);
@@ -782,11 +782,11 @@ function downloadTemplate() {
   downloadText("dx-returns-upload-template.csv", buildReturnCsvTemplate(), "text/csv");
 }
 
-function resetDemoData() {
-  state.returns = enrichReturns(parseReturnsCsv(state.demoCsv));
-  state.sourceName = "Synthetic demo CSV";
+function eraseSessionData() {
+  state.returns = [];
+  state.sourceName = "Empty session";
   state.loadError = "";
-  state.validation = validateReturnsCsv(state.demoCsv);
+  state.validation = null;
   state.page = 1;
   state.filters = { market: "All", partner: "All", status: "All", slaState: "All", search: "" };
   render();

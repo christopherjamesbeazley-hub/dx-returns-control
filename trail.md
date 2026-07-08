@@ -59,6 +59,7 @@
 - Added CSV schema validation before upload replacement.
 - Added CSV template download.
 - Added friendly column alias mapping for spreadsheet-style headers.
+- Changed the previous demo reset control into an Erase all action that clears the current in-memory session without touching the committed CSV.
 - Added search and pagination for the returns register.
 - Added ROI calculator with editable business assumptions.
 - Added about/governance/pilot proposal panels.
