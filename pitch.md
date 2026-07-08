@@ -24,6 +24,8 @@ The concept is assumption-led and uses synthetic data only. It does not claim ac
 - Prompt-injection and jailbreak guardrails for uploaded operational notes.
 - Recurring delay theme detection.
 - Explainable Phase 4 risk scoring and early-warning signals.
+- Snapshot comparison with positive/negative movement labels.
+- Optional controlled stakeholder email distribution through a server-side webhook.
 - ROI calculator for estimating annual value.
 
 ## Business Value Hypothesis

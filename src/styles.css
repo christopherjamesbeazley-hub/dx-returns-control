@@ -128,7 +128,7 @@ h3 {
 
 .role-switcher {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 18px 0;
 }
@@ -603,6 +603,58 @@ h3 {
   margin-bottom: 16px;
 }
 
+.snapshot-panel {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #e1e8e4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.snapshot-panel.expanded {
+  margin-bottom: 18px;
+}
+
+.snapshot-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.4fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.snapshot-narrative {
+  margin: 10px 0 0;
+  color: #42535a;
+  line-height: 1.55;
+}
+
+.delta-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 78px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.delta-badge.positive {
+  color: #0d5a45;
+  background: #dff4e9;
+}
+
+.delta-badge.negative {
+  color: #8f1e1e;
+  background: #fbe7df;
+}
+
+.delta-badge.stable {
+  color: #45565c;
+  background: #edf3ef;
+}
+
 .panel-inner,
 .forecast-card {
   min-width: 0;
@@ -978,6 +1030,48 @@ td small {
   white-space: pre-wrap;
 }
 
+.email-panel {
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, #ffffff, #fbfdfb);
+}
+
+.email-panel p {
+  color: #42535a;
+  line-height: 1.55;
+}
+
+.email-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.email-fields label,
+.email-fields span {
+  display: block;
+}
+
+.email-fields span {
+  margin-bottom: 6px;
+  color: #52616a;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.email-fields textarea,
+.email-fields input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #d5dedb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #24333a;
+  background: #ffffff;
+  resize: vertical;
+}
+
 .report-panel {
   margin-bottom: 18px;
 }
@@ -1099,9 +1193,11 @@ td small {
 
   .two-column,
   .three-column,
+  .snapshot-grid,
   .draft-grid,
   .summary-grid,
   .info-grid,
+  .email-fields,
   .roi-grid,
   .roi-results {
     grid-template-columns: 1fr;
@@ -1128,6 +1224,7 @@ td small {
   .automation-actions,
   .llm-actions,
   .security-panel,
+  .snapshot-panel,
   .theme-list li {
     display: grid;
     justify-content: stretch;

@@ -7,6 +7,7 @@ The original implementation target was React/Vite. In this workspace, npm regist
 ## What It Demonstrates
 
 - Role-specific views for Operations Manager, Coordinator, and Leadership.
+- Snapshot comparison view for positive, negative, and stable movement across generated snapshots.
 - CSV upload for refreshing the in-memory dashboard dataset.
 - Erase-all control for clearing the current in-memory session.
 - CSV schema validation for required return-export columns.
@@ -24,6 +25,7 @@ The original implementation target was React/Vite. In this workspace, npm regist
 - Weekly digest-style stakeholder summary.
 - Deterministic Phase 3 AI-assist summaries that keep humans in control and disclose source fields.
 - Optional server-side external LLM bridge for a governed weekly narrative.
+- Optional server-side email/webhook delivery for stakeholder reports.
 - Prompt-injection guardrails for uploaded notes, delay reasons, status text, and item descriptions.
 - Recurring delay theme detection for operational pattern review.
 - Phase 4 explainable risk scoring, trend snapshots, early-warning signals, and continuous-improvement actions.
@@ -72,6 +74,7 @@ Uploaded CSV files are loaded only in the browser session. They do not overwrite
 - AI-assist confidence is limited when due date, notes, or delay reason are missing.
 - AI-assist confidence is also limited when uploaded text resembles prompt injection, jailbreak, secret extraction, or tool-misuse instructions.
 - Phase 4 forecast output is deterministic prioritization, not an autonomous predictive model.
+- Snapshot comparison treats lower overdue returns, exposure, high-value risk, and missing due dates as positive movement.
 - Risk scores show their drivers and are intended for control-meeting review.
 - Uploaded CSVs are validated against the expected schema before replacing the in-memory dataset.
 - Native Excel `.xlsx` files should be exported as CSV before upload in this dependency-free prototype.
@@ -95,6 +98,15 @@ The app can call a server-side, OpenAI-compatible chat-completions endpoint when
 For OpenAI specifically, `OPENAI_API_KEY` and `OPENAI_MODEL` are also recognized; the server defaults the URL to `https://api.openai.com/v1/chat/completions` when `OPENAI_API_KEY` is present. Do not expose keys in browser JavaScript or commit them to Git.
 
 The browser sends a sanitized evidence pack to `/api/llm/weekly-summary`. The pack contains KPI totals, themes, market/partner signals, and top worklist rows. It does not send raw notes, and prompt-security flagged free text is withheld.
+
+## Optional Email Delivery
+
+The dashboard can send the weekly stakeholder report to a server-side webhook when these environment variables are configured:
+
+- `EMAIL_WEBHOOK_URL`
+- `EMAIL_WEBHOOK_TOKEN` optional
+
+This is designed for tools such as Power Automate, n8n, SendGrid, Make, or an enterprise mail gateway. The browser collects recipient addresses, but the actual delivery integration stays server-side. In the default configuration, no email is sent.
 
 ## Commands
 

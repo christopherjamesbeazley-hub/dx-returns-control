@@ -46,6 +46,7 @@ The prototype uses synthetic data only. It does not claim access to Philips inte
 ## Phase 4: Forecasting And Continuous Improvement
 
 - Add weekly snapshots to compare backlog, overdue movement, high-value exposure, and data-quality gaps over time.
+- Provide a snapshot comparison page that labels movement as positive, negative, or stable.
 - Add simple early-warning indicators for market pressure, partner concentration, recurring delay themes, and critical-risk returns.
 - Add transparent priority scoring based on overdue state, near-due state, high value, stale updates, age, missing due dates, and recurring themes.
 - Add continuous-improvement recommendations for data quality, process bottlenecks, partner review, and control rhythm.
@@ -65,6 +66,7 @@ The prototype uses synthetic data only. It does not claim access to Philips inte
 - AI-assist outputs remain deterministic, source-grounded, and human-reviewed.
 - Prompt-security guardrails are visible in the dashboard and covered by tests.
 - The external LLM bridge is optional, server-side, key-safe, and uses a sanitized evidence pack rather than raw CSV rows.
+- Stakeholder report delivery is optional, server-side, webhook-based, and human-triggered in the prototype.
 - Phase 4 risk scores remain explainable and show their drivers.
 - Forecasting language is presented as a prioritization signal, not an autonomous prediction.
 - Tests cover parsing, SLA classification, KPI calculations, Phase 2 exports/reports, and Phase 3 AI-assist outputs.

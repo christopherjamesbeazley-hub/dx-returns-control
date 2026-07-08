@@ -5,12 +5,14 @@ import {
   buildForecastNarrative,
   buildIssueSummary,
   buildLlmBrief,
+  buildSnapshotComparisonNarrative,
   buildReturnCsvTemplate,
   buildStakeholderReport,
   buildTrendSnapshots,
   buildWeeklyDigest,
   calculateRoi,
   calculateKpis,
+  compareTrendSnapshots,
   enrichReturns,
   filterReturns,
   formatCurrency,
@@ -35,6 +37,7 @@ const roles = [
   ["manager", "Ops Manager", "KPI control, overdue pressure, and weekly governance."],
   ["coordinator", "Coordinator", "Daily follow-up, owners, missing dates, and partner blockers."],
   ["leadership", "Leadership", "Trend narrative, risk concentration, and partner/market exposure."],
+  ["snapshots", "Snapshots", "Snapshot comparison, movement direction, and report distribution."],
 ];
 
 const state = {
@@ -65,6 +68,13 @@ const state = {
     error: "",
     model: "",
   },
+  email: {
+    recipients: "",
+    subject: "DX Returns Weekly Control Report",
+    status: "idle",
+    message: "",
+    error: "",
+  },
 };
 
 async function boot() {
@@ -89,13 +99,15 @@ function render() {
   const delayThemes = getDelayThemes(state.returns);
   const aiNarrative = buildAiNarrative({ kpis, themes: delayThemes, marketBreakdown, worklist });
   const trends = buildTrendSnapshots(state.returns);
+  const snapshotComparison = compareTrendSnapshots(trends);
+  const snapshotNarrative = buildSnapshotComparisonNarrative(snapshotComparison);
   const riskForecast = getPrioritizedRiskForecast(state.returns, delayThemes);
   const warnings = getEarlyWarnings({ marketBreakdown, partnerPerformance, themes: delayThemes, riskForecast });
   const improvementActions = getContinuousImprovementActions({ kpis, themes: delayThemes, partnerPerformance });
   const forecastNarrative = buildForecastNarrative({ riskForecast, trends, warnings });
   const roi = calculateRoi(state.roiInputs);
   const promptFindings = getPromptSecurityFindings(state.returns);
-  const llmBrief = buildLlmBrief({ kpis, themes: delayThemes, marketBreakdown, partnerPerformance, worklist, promptFindings });
+  const llmBrief = buildLlmBrief({ kpis, themes: delayThemes, marketBreakdown, partnerPerformance, worklist, snapshotComparison, promptFindings });
   state.currentLlmBrief = llmBrief;
 
   root.innerHTML = `
@@ -134,9 +146,10 @@ function render() {
         ${kpiCard("Overdue exposure", formatCurrency(kpis.overdueExposure), "danger", "EX")}
       </section>
 
-      ${state.activeRole === "manager" ? managerView({ aiNarrative, delayThemes, digest, filteredReturns, forecastNarrative, kpis, llmState: state.llm, paginatedReturns, riskForecast, stakeholderReport, worklist }) : ""}
+      ${state.activeRole === "manager" ? managerView({ aiNarrative, delayThemes, digest, emailState: state.email, filteredReturns, forecastNarrative, kpis, llmState: state.llm, paginatedReturns, riskForecast, stakeholderReport, worklist }) : ""}
       ${state.activeRole === "coordinator" ? coordinatorView({ filteredReturns, paginatedReturns, worklist }) : ""}
-      ${state.activeRole === "leadership" ? leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, improvementActions, kpis, llmState: state.llm, marketBreakdown, partnerPerformance, riskForecast, roi, stakeholderReport, trends, warnings, worklist }) : ""}
+      ${state.activeRole === "leadership" ? leadershipView({ aiNarrative, delayThemes, digest, emailState: state.email, forecastNarrative, improvementActions, kpis, llmState: state.llm, marketBreakdown, partnerPerformance, riskForecast, roi, snapshotComparison, snapshotNarrative, stakeholderReport, trends, warnings, worklist }) : ""}
+      ${state.activeRole === "snapshots" ? snapshotView({ emailState: state.email, llmState: state.llm, snapshotComparison, snapshotNarrative, stakeholderReport, trends }) : ""}
     </main>
   `;
 
@@ -230,7 +243,7 @@ function promptSecurityPanel(findings) {
   `;
 }
 
-function managerView({ aiNarrative, delayThemes, digest, filteredReturns, forecastNarrative, kpis, llmState, paginatedReturns, riskForecast, stakeholderReport, worklist }) {
+function managerView({ aiNarrative, delayThemes, digest, emailState, filteredReturns, forecastNarrative, kpis, llmState, paginatedReturns, riskForecast, stakeholderReport, worklist }) {
   return `
     <section class="two-column">
       ${weeklyDigest(digest)}
@@ -246,6 +259,7 @@ function managerView({ aiNarrative, delayThemes, digest, filteredReturns, foreca
     ${aiAssistPanel({ aiNarrative, delayThemes, worklist })}
     ${externalLlmPanel(llmState)}
     ${reportPanel(stakeholderReport)}
+    ${emailDeliveryPanel(emailState)}
     <section class="panel">
       <div class="panel-heading">
         <div><p class="eyebrow">Returns register</p><h3>Open return population</h3></div>
@@ -295,11 +309,11 @@ function coordinatorView({ filteredReturns, paginatedReturns, worklist }) {
   `;
 }
 
-function leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, improvementActions, kpis, llmState, marketBreakdown, partnerPerformance, riskForecast, roi, stakeholderReport, trends, warnings, worklist }) {
+function leadershipView({ aiNarrative, delayThemes, digest, emailState, forecastNarrative, improvementActions, kpis, llmState, marketBreakdown, partnerPerformance, riskForecast, roi, snapshotComparison, snapshotNarrative, stakeholderReport, trends, warnings, worklist }) {
   const highValueItems = worklist.filter((item) => item.highValue).slice(0, 5);
 
   return `
-    ${phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, trends, warnings })}
+    ${phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, snapshotComparison, snapshotNarrative, trends, warnings })}
     ${roiPanel(roi)}
     <section class="two-column">
       ${weeklyDigest(digest, true)}
@@ -313,6 +327,7 @@ function leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, i
       </div>
     </section>
     ${externalLlmPanel(llmState)}
+    ${emailDeliveryPanel(emailState)}
     ${themePanel(delayThemes)}
     ${reportPanel(stakeholderReport, true)}
     <section class="three-column">
@@ -327,6 +342,18 @@ function leadershipView({ aiNarrative, delayThemes, digest, forecastNarrative, i
           ${highValueItems.map((item) => `<li><strong>${item.returnId}</strong><span>${escapeHtml(item.market)}</span><em>${formatCurrency(item.valueEur)}</em></li>`).join("")}
         </ul>
       </div>
+    </section>
+  `;
+}
+
+function snapshotView({ emailState, llmState, snapshotComparison, snapshotNarrative, stakeholderReport, trends }) {
+  return `
+    ${snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends, expanded: true })}
+    ${externalLlmPanel(llmState)}
+    ${emailDeliveryPanel(emailState)}
+    ${reportPanel(stakeholderReport)}
+    <section class="assumption-strip">
+      <strong>Snapshot control note:</strong> comparison values are generated from the current loaded export and synthetic snapshot logic. In a real rollout, these would come from stored daily or weekly historical snapshots.
     </section>
   `;
 }
@@ -376,7 +403,7 @@ function phase4CompactPanel({ forecastNarrative, riskForecast }) {
   `;
 }
 
-function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, trends, warnings }) {
+function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, snapshotComparison, snapshotNarrative, trends, warnings }) {
   return `
     <section class="panel forecast-panel">
       <div class="panel-heading">
@@ -384,10 +411,11 @@ function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForeca
         <span class="glyph">F4</span>
       </div>
       <p class="forecast-narrative">${escapeHtml(forecastNarrative)}</p>
+      ${snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends })}
       <div class="three-column phase4-grid">
-        ${trendPanel(trends)}
         ${warningPanel(warnings)}
         ${improvementPanel(improvementActions)}
+        ${riskSummaryPanel(riskForecast)}
       </div>
       <div class="panel-inner">
         <div class="panel-heading compact-heading">
@@ -395,6 +423,45 @@ function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForeca
           <span class="count-pill">${riskForecast.length} scored</span>
         </div>
         ${riskForecastTable(riskForecast.slice(0, 8))}
+      </div>
+    </section>
+  `;
+}
+
+function snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends, expanded = false }) {
+  const latest = snapshotComparison.at(-1);
+  const comparisons = expanded ? snapshotComparison : snapshotComparison.slice(-2);
+
+  return `
+    <section class="${expanded ? "panel snapshot-panel expanded" : "snapshot-panel"}">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Snapshot comparison</p><h3>Movement since prior snapshots</h3></div>
+        ${latest ? `<span class="delta-badge ${latest.overallDirection}">${escapeHtml(latest.overallDirection)}</span>` : `<span class="delta-badge stable">stable</span>`}
+      </div>
+      <p class="snapshot-narrative">${escapeHtml(snapshotNarrative)}</p>
+      <div class="snapshot-grid">
+        ${trendPanel(trends)}
+        <div class="forecast-card">
+          <h3>Comparison ledger</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Period</th><th>Metric</th><th>Previous</th><th>Current</th><th>Move</th></tr></thead>
+              <tbody>
+                ${comparisons.flatMap((comparison) =>
+                  comparison.metrics.map((metric) => `
+                    <tr>
+                      <td><strong>${escapeHtml(comparison.fromDate)}</strong><small>to ${escapeHtml(comparison.toDate)}</small></td>
+                      <td>${escapeHtml(metric.label)}</td>
+                      <td>${formatSnapshotMetric(metric)}</td>
+                      <td>${formatSnapshotMetric(metric, "current")}</td>
+                      <td><span class="delta-badge ${metric.direction}">${formatDelta(metric)}</span></td>
+                    </tr>
+                  `),
+                ).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
   `;
@@ -415,6 +482,16 @@ function trendPanel(trends) {
       </ul>
     </div>
   `;
+}
+
+function formatSnapshotMetric(metric, side = "previous") {
+  const value = metric[side];
+  return metric.key === "overdueExposure" ? formatCurrency(value) : value;
+}
+
+function formatDelta(metric) {
+  const prefix = metric.delta > 0 ? "+" : "";
+  return metric.key === "overdueExposure" ? `${prefix}${formatCurrency(metric.delta)}` : `${prefix}${metric.delta}`;
 }
 
 function warningPanel(warnings) {
@@ -446,6 +523,21 @@ function improvementPanel(actions) {
             <em>${escapeHtml(action.impact)}</em>
           </li>
         `).join("")}
+      </ul>
+    </div>
+  `;
+}
+
+function riskSummaryPanel(riskForecast) {
+  const critical = riskForecast.filter((item) => item.riskLevel === "critical").length;
+  const high = riskForecast.filter((item) => item.riskLevel === "high").length;
+  const top = riskForecast[0];
+  return `
+    <div class="forecast-card">
+      <h3>Risk summary</h3>
+      <ul class="warning-list">
+        <li><strong>${critical} critical</strong><span>${high} high-risk returns remain in the scored worklist.</span><em>Review before any outbound escalation.</em></li>
+        ${top ? `<li><strong>${escapeHtml(top.returnId)}</strong><span>${escapeHtml(top.riskDrivers.join(", "))}</span><em>${formatCurrency(top.valueEur)} exposure</em></li>` : ""}
       </ul>
     </div>
   `;
@@ -576,6 +668,42 @@ function reportPanel(stakeholderReport, compact = false) {
         <button class="text-button" data-download-report type="button"><span class="glyph">TX</span><span>Download report</span></button>
       </div>
       <pre class="${compact ? "report-preview compact" : "report-preview"}">${escapeHtml(stakeholderReport)}</pre>
+    </section>
+  `;
+}
+
+function emailDeliveryPanel(emailState) {
+  const disabled = !state.returns.length || emailState.status === "sending";
+  const statusText = {
+    idle: "Enter stakeholder email addresses, then send through the configured server-side mail webhook.",
+    sending: "Sending report payload to the configured server-side mail webhook.",
+    sent: emailState.message || "Report payload sent.",
+    error: "Report was not sent.",
+  }[emailState.status] ?? "Enter stakeholder email addresses, then send through the configured server-side mail webhook.";
+
+  return `
+    <section class="panel email-panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">Automated email distribution</p><h3>Controlled stakeholder send</h3></div>
+        <span class="glyph">EM</span>
+      </div>
+      <p>${escapeHtml(statusText)}</p>
+      <div class="email-fields">
+        <label>
+          <span>Recipients</span>
+          <textarea data-email-recipients rows="3" placeholder="ops.manager@example.com, coordinator@example.com">${escapeHtml(emailState.recipients)}</textarea>
+        </label>
+        <label>
+          <span>Subject</span>
+          <input data-email-subject type="text" value="${escapeHtml(emailState.subject)}" />
+        </label>
+      </div>
+      <div class="llm-actions">
+        <button class="text-button" data-send-report type="button" ${disabled ? "disabled" : ""}><span class="glyph">SN</span><span>${emailState.status === "sending" ? "Sending" : "Send report"}</span></button>
+        <button class="text-button" data-download-report type="button"><span class="glyph">TX</span><span>Download report</span></button>
+      </div>
+      <div class="source-tags"><span>Server-side webhook</span><span>Recipient allowlist ready</span><span>No browser secrets</span><span>Human-triggered</span></div>
+      ${emailState.error ? `<em class="llm-error">${escapeHtml(emailState.error)}</em>` : ""}
     </section>
   `;
 }
@@ -778,6 +906,13 @@ function bindEvents() {
     });
   });
 
+  document.querySelector("[data-email-recipients]")?.addEventListener("input", (event) => {
+    state.email.recipients = event.target.value;
+  });
+  document.querySelector("[data-email-subject]")?.addEventListener("input", (event) => {
+    state.email.subject = event.target.value;
+  });
+
   document.querySelector("[data-upload-csv]")?.addEventListener("change", handleCsvUpload);
   document.querySelector("[data-download-template]")?.addEventListener("click", downloadTemplate);
   document.querySelector("[data-erase-session]")?.addEventListener("click", eraseSessionData);
@@ -790,6 +925,7 @@ function bindEvents() {
   });
   document.querySelector("[data-run-llm]")?.addEventListener("click", runExternalLlm);
   document.querySelector("[data-copy-llm-brief]")?.addEventListener("click", copyLlmBrief);
+  document.querySelector("[data-send-report]")?.addEventListener("click", sendReportEmail);
 }
 
 async function handleCsvUpload(event) {
@@ -848,6 +984,41 @@ function downloadReport() {
   downloadText("dx-returns-weekly-report.txt", report, "text/plain");
 }
 
+async function sendReportEmail() {
+  const recipients = parseRecipientList(state.email.recipients);
+  if (!recipients.length) {
+    state.email = { ...state.email, status: "error", error: "Add at least one recipient email address.", message: "" };
+    render();
+    return;
+  }
+
+  state.email = { ...state.email, status: "sending", error: "", message: "" };
+  render();
+
+  try {
+    const report = buildCurrentStakeholderReport();
+    const response = await fetch("/api/email/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipients,
+        subject: state.email.subject || "DX Returns Weekly Control Report",
+        body: report,
+        evidencePack: buildCurrentLlmBrief(),
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) {
+      throw new Error(result.message || "Email webhook request failed.");
+    }
+    state.email = { ...state.email, status: "sent", error: "", message: `Report sent to ${recipients.length} recipient${recipients.length === 1 ? "" : "s"}.` };
+  } catch (error) {
+    state.email = { ...state.email, status: "error", error: error.message, message: "" };
+  }
+
+  render();
+}
+
 async function runExternalLlm() {
   if (!state.returns.length) {
     state.llm = { status: "error", output: "", error: "Load returns data before requesting an LLM narrative.", model: "" };
@@ -895,7 +1066,23 @@ function buildCurrentLlmBrief() {
   const partnerPerformance = getPartnerPerformance(state.returns);
   const themes = getDelayThemes(state.returns);
   const promptFindings = getPromptSecurityFindings(state.returns);
-  return buildLlmBrief({ kpis, themes, marketBreakdown, partnerPerformance, worklist, promptFindings });
+  const snapshotComparison = compareTrendSnapshots(buildTrendSnapshots(state.returns));
+  return buildLlmBrief({ kpis, themes, marketBreakdown, partnerPerformance, worklist, snapshotComparison, promptFindings });
+}
+
+function buildCurrentStakeholderReport() {
+  const kpis = calculateKpis(state.returns);
+  const worklist = getOverdueWorklist(state.returns);
+  const marketBreakdown = getMarketBreakdown(state.returns);
+  const partnerPerformance = getPartnerPerformance(state.returns);
+  return buildStakeholderReport({ kpis, marketBreakdown, partnerPerformance, worklist });
+}
+
+function parseRecipientList(value) {
+  return String(value)
+    .split(/[,;\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 async function copyDraft(index) {

@@ -47,12 +47,14 @@
 ## Phase 4 Completed
 
 - Added synthetic weekly trend snapshots.
+- Added a snapshot comparison view with positive, negative, and stable movement labels.
 - Added deterministic risk scoring with visible drivers.
 - Added prioritized risk forecast table.
 - Added early-warning signals for market, partner, delay-theme, and critical-risk concentration.
 - Added continuous-improvement recommendations.
 - Added forecast narrative language that explicitly stays human-reviewed and non-autonomous.
-- Added tests for trend snapshots, risk scoring, early warnings, improvement actions, and forecast narrative.
+- Added optional human-triggered stakeholder email delivery through a server-side webhook.
+- Added tests for trend snapshots, snapshot comparison, risk scoring, early warnings, improvement actions, and forecast narrative.
 
 ## Pitch-Ready Polish Completed
 
@@ -85,6 +87,7 @@
 - No real API, SharePoint, Power BI, Teams, Outlook, ERP, or DX Returns Manager integration is implemented.
 - No AI API is called in the default configuration.
 - External LLM calls occur only when server-side environment variables are configured.
+- Email delivery occurs only when a server-side email webhook is configured.
 - Uploaded operational notes and delay reasons are treated as untrusted source data, not AI instructions.
 - No outbound message is sent automatically.
 - The app stores uploaded CSV data only in the current browser session.

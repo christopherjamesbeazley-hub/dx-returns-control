@@ -13,6 +13,8 @@ This prototype is built with synthetic data only. The default "AI assist" layer 
 - Raw notes are not included in the LLM evidence pack.
 - Prompt-security flagged free text is withheld from the LLM evidence pack.
 - API keys stay server-side and must never be committed or exposed in browser JavaScript.
+- Optional email delivery uses a server-side webhook; mail/webhook credentials must never be exposed in browser JavaScript.
+- Email sending is human-triggered in the prototype and tagged as non-autonomous in the webhook payload.
 - No uploaded text is treated as a system instruction or developer instruction.
 - No automated outbound messages, source-system updates, return closures, or financial decisions are performed.
 - Uploaded files replace only the in-memory browser session dataset.
@@ -28,6 +30,7 @@ If this concept is connected to a real LLM, the integration should follow these 
 - Require every generated summary to cite return IDs and source fields.
 - Use allowlisted tools only; never let uploaded text choose tools, destinations, commands, recipients, or API actions.
 - Route escalations, email, Teams messages, writebacks, and status changes through human approval.
+- Restrict recipient domains or use enterprise-approved distribution lists before production rollout.
 - Log model inputs, outputs, source row IDs, reviewer decisions, and final sent messages where policy allows.
 - Test with malicious spreadsheet rows before expanding scope.
 

@@ -23,6 +23,11 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (requestedPath === "/api/email/report") {
+    await handleEmailReport(request, response);
+    return;
+  }
+
   const relativePath = requestedPath === "/" ? "index.html" : requestedPath.slice(1);
   const filePath = resolve(root, normalize(relativePath));
 
@@ -121,6 +126,68 @@ async function handleLlmWeeklySummary(request, response) {
   }
 }
 
+async function handleEmailReport(request, response) {
+  if (request.method !== "POST") {
+    sendJson(response, 405, { ok: false, message: "Method not allowed." });
+    return;
+  }
+
+  const webhookUrl = process.env.EMAIL_WEBHOOK_URL;
+  if (!webhookUrl) {
+    sendJson(response, 503, {
+      ok: false,
+      message: "Email delivery is not configured. Set EMAIL_WEBHOOK_URL in the server environment.",
+    });
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(request);
+    const recipients = normalizeRecipients(body.recipients);
+    if (!recipients.length) {
+      sendJson(response, 400, { ok: false, message: "At least one valid recipient is required." });
+      return;
+    }
+
+    if (!body.subject || !body.body) {
+      sendJson(response, 400, { ok: false, message: "Email subject and body are required." });
+      return;
+    }
+
+    const webhookResponse = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.EMAIL_WEBHOOK_TOKEN ? { Authorization: `Bearer ${process.env.EMAIL_WEBHOOK_TOKEN}` } : {}),
+      },
+      body: JSON.stringify({
+        to: recipients,
+        subject: String(body.subject).slice(0, 160),
+        body: String(body.body).slice(0, 20_000),
+        evidencePack: body.evidencePack ?? null,
+        governance: {
+          source: "DX Returns Control prototype",
+          humanTriggered: true,
+          noAutonomousDecision: true,
+        },
+      }),
+    });
+
+    if (!webhookResponse.ok) {
+      sendJson(response, 502, {
+        ok: false,
+        message: "Email webhook request failed.",
+        status: webhookResponse.status,
+      });
+      return;
+    }
+
+    sendJson(response, 200, { ok: true, sentCount: recipients.length });
+  } catch (error) {
+    sendJson(response, 500, { ok: false, message: error.message });
+  }
+}
+
 async function readJsonBody(request) {
   const chunks = [];
   let size = 0;
@@ -134,6 +201,18 @@ async function readJsonBody(request) {
   }
 
   return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+}
+
+function normalizeRecipients(value) {
+  const items = Array.isArray(value) ? value : String(value ?? "").split(/[,;\n]/);
+  return Array.from(
+    new Set(
+      items
+        .map((item) => String(item).trim())
+        .filter((item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item))
+        .slice(0, 20),
+    ),
+  );
 }
 
 function sendJson(response, status, payload) {

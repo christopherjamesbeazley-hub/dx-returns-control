@@ -413,6 +413,7 @@ export function buildLlmBrief({
   marketBreakdown,
   partnerPerformance,
   worklist,
+  snapshotComparison = [],
   promptFindings = [],
   snapshotDate = SNAPSHOT_DATE,
 }) {
@@ -473,6 +474,13 @@ export function buildLlmBrief({
       exposureEur: partner.exposure,
     })),
     worklist: worklist.slice(0, 10).map((item) => buildLlmWorklistItem(item)),
+    snapshotComparison: snapshotComparison.map((item) => ({
+      fromDate: item.fromDate,
+      toDate: item.toDate,
+      metrics: item.metrics,
+      overallDirection: item.overallDirection,
+      summary: item.summary,
+    })),
     promptSecurity: {
       flaggedRowCount: promptFindings.length,
       examples: promptFindings.slice(0, 5).map((finding) => ({
@@ -483,6 +491,7 @@ export function buildLlmBrief({
     },
     requestedOutput: [
       "One concise executive paragraph.",
+      "One snapshot-comparison paragraph explaining whether movement is positive, negative, or stable.",
       "Three operational risks with evidence.",
       "Three recommended human follow-up actions.",
       "One governance note confirming no autonomous decision has been made.",
@@ -506,6 +515,49 @@ export function buildTrendSnapshots(enrichedReturns, snapshotDate = SNAPSHOT_DAT
   });
 
   return snapshots;
+}
+
+export function compareTrendSnapshots(trends) {
+  return trends.slice(1).map((current, index) => {
+    const previous = trends[index];
+    const metrics = [
+      buildSnapshotMetric("Open returns", "openCount", previous, current, "lower"),
+      buildSnapshotMetric("Overdue returns", "overdueCount", previous, current, "lower"),
+      buildSnapshotMetric("High-value returns", "highValueCount", previous, current, "lower"),
+      buildSnapshotMetric("Missing due dates", "missingDueDateCount", previous, current, "lower"),
+      buildSnapshotMetric("Overdue exposure", "overdueExposure", previous, current, "lower"),
+    ];
+    const positiveCount = metrics.filter((metric) => metric.direction === "positive").length;
+    const negativeCount = metrics.filter((metric) => metric.direction === "negative").length;
+    const overallDirection = negativeCount > positiveCount ? "negative" : positiveCount > negativeCount ? "positive" : "stable";
+
+    return {
+      fromDate: previous.date,
+      toDate: current.date,
+      metrics,
+      overallDirection,
+      summary: `${previous.date} to ${current.date}: ${positiveCount} positive, ${negativeCount} negative, ${metrics.length - positiveCount - negativeCount} stable signals.`,
+    };
+  });
+}
+
+export function buildSnapshotComparisonNarrative(comparisons) {
+  const latest = comparisons.at(-1);
+  if (!latest) return "Snapshot comparison is not available until at least two snapshots exist.";
+
+  const overdue = latest.metrics.find((metric) => metric.key === "overdueCount");
+  const exposure = latest.metrics.find((metric) => metric.key === "overdueExposure");
+  const dataQuality = latest.metrics.find((metric) => metric.key === "missingDueDateCount");
+
+  return [
+    `Latest snapshot movement from ${latest.fromDate} to ${latest.toDate} is ${latest.overallDirection}.`,
+    overdue ? `Overdue returns moved ${formatSignedNumber(overdue.delta)} to ${overdue.current}.` : "",
+    exposure ? `Overdue exposure moved ${formatSignedNumber(exposure.delta, true)} to ${formatCurrency(exposure.current)}.` : "",
+    dataQuality ? `Missing due dates moved ${formatSignedNumber(dataQuality.delta)} to ${dataQuality.current}.` : "",
+    `Lower overdue, exposure, and data-quality gaps are treated as positive movement.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function scoreReturnRisk(item, themePressure = 0) {
@@ -831,6 +883,32 @@ function buildLlmWorklistItem(item) {
     lastUpdateDate: item.lastUpdateDate,
     sourceFields: ["return_id", "market", "partner", "owner", "status", "due_date", "last_update_date", "value_eur", "delay_reason"],
   };
+}
+
+function buildSnapshotMetric(label, key, previous, current, preferredDirection) {
+  const previousValue = previous[key] ?? 0;
+  const currentValue = current[key] ?? 0;
+  const delta = currentValue - previousValue;
+  const direction =
+    delta === 0
+      ? "stable"
+      : preferredDirection === "lower"
+        ? delta < 0 ? "positive" : "negative"
+        : delta > 0 ? "positive" : "negative";
+
+  return {
+    label,
+    key,
+    previous: previousValue,
+    current: currentValue,
+    delta,
+    direction,
+  };
+}
+
+function formatSignedNumber(value, currency = false) {
+  const prefix = value > 0 ? "+" : "";
+  return currency ? `${prefix}${formatCurrency(value)}` : `${prefix}${value}`;
 }
 
 function safeEvidenceText(value, maxLength = 160) {
