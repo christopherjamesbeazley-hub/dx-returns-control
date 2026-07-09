@@ -32,7 +32,7 @@ import {
   scoreReturnRisk,
   serializeWorklistCsv,
   validateReturnsCsv,
-} from "./analytics.js";
+} from "./returns-engine.js";
 
 const returnsCsv = readFileSync(new URL("../data/returns.csv", import.meta.url), "utf8");
 const parsed = parseReturnsCsv(returnsCsv);

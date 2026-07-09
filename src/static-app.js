@@ -83,15 +83,15 @@ const state = {
 
 async function loadAnalyticsModule() {
   const version = `20260709-self-healing-${Date.now()}`;
-  const modulePath = `./lib/analytics.js?v=${version}`;
+  const modulePath = `./lib/returns-engine.js?v=${version}`;
   const loaded = await import(modulePath);
   if (isValidAnalyticsModule(loaded)) {
     return loaded;
   }
 
-  const response = await fetch(`/src/lib/analytics.js?v=${version}`, { cache: "no-store" });
+  const response = await fetch(`/src/lib/returns-engine.js?v=${version}`, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`Analytics module was incomplete and source reload failed: HTTP ${response.status}`);
+    throw new Error(`Returns engine module was incomplete and source reload failed: HTTP ${response.status}`);
   }
 
   const source = await response.text();
@@ -101,7 +101,7 @@ async function loadAnalyticsModule() {
     if (isValidAnalyticsModule(reloaded)) {
       return reloaded;
     }
-    throw new Error(`Analytics module reload was incomplete. Available exports: ${Object.keys(reloaded).join(", ") || "none"}`);
+    throw new Error(`Returns engine module reload was incomplete. Available exports: ${Object.keys(reloaded).join(", ") || "none"}`);
   } finally {
     URL.revokeObjectURL(blobUrl);
   }
@@ -1165,7 +1165,7 @@ boot().catch((error) => {
         <p class="eyebrow">Startup error</p>
         <h1>Unable to load dashboard</h1>
         <p>${escapeHtml(error.message)}</p>
-        <p>Try a hard refresh first. If this is on Render, confirm the deployed service can serve <code>/src/static-app.js</code> and <code>/src/data/returns.csv</code>.</p>
+        <p>Try a hard refresh first. If this is on Render, confirm the deployed service can serve <code>/src/static-app.js</code>, <code>/src/lib/returns-engine.js</code>, and <code>/src/data/returns.csv</code>.</p>
       </section>
     </main>
   `;
