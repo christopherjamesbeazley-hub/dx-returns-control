@@ -69,6 +69,14 @@ test("classifies open returns by explicit due-date SLA state", () => {
   assert.equal(classifySla(seedParsed.find((item) => item.returnId === "DXR-1006")), "closed");
 });
 
+test("treats returned and credited items as closed statuses", () => {
+  const base = seedParsed.find((item) => item.returnId === "DXR-1001");
+
+  assert.equal(enrichReturns([{ ...base, status: "Item received" }], SNAPSHOT_DATE)[0].open, true);
+  assert.equal(enrichReturns([{ ...base, status: "Returned" }], SNAPSHOT_DATE)[0].open, false);
+  assert.equal(enrichReturns([{ ...base, status: "Credit note created and sent to customer" }], SNAPSHOT_DATE)[0].open, false);
+});
+
 test("calculates stable KPI totals for the original seed records", () => {
   assert.equal(seedKpis.openCount, 23);
   assert.equal(seedKpis.closedCount, 2);

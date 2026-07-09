@@ -41,7 +41,18 @@ export const RETURN_COLUMN_ALIASES = {
   source_label: ["source label", "source", "data source", "source system"],
 };
 
-const CLOSED_STATUSES = new Set(["closed", "cancelled"]);
+const CLOSED_STATUSES = new Set([
+  "closed",
+  "cancelled",
+  "completed",
+  "resolved",
+  "returned",
+  "item returned",
+  "return completed",
+  "credit note sent",
+  "credit note created",
+  "credit note created and sent to customer",
+]);
 const PROMPT_SECURITY_PATTERNS = [
   { label: "instruction override", pattern: /\b(ignore|disregard|forget)\b.{0,40}\b(previous|above|prior|system|developer)\b.{0,20}\b(instruction|prompt|message|rules?)\b/i },
   { label: "secret extraction", pattern: /\b(reveal|print|show|dump|leak|exfiltrate)\b.{0,40}\b(system prompt|developer message|hidden prompt|instructions?|secrets?|api key|token)\b/i },
