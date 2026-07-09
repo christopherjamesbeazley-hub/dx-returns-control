@@ -25,6 +25,46 @@
         </section>
       </main>
     </noscript>
-    <script type="module" src="/src/static-app.js"></script>
+    <script>
+      window.setTimeout(function () {
+        var root = document.getElementById("root");
+        if (root && root.textContent.indexOf("Loading dashboard") !== -1) {
+          var detail = document.createElement("p");
+          detail.className = "startup-hint";
+          detail.textContent = "The browser is still waiting for the dashboard module. Check whether JavaScript modules are blocked, then hard-refresh the page.";
+          var panel = root.querySelector(".startup-panel");
+          if (panel) {
+            panel.appendChild(detail);
+          }
+        }
+      }, 5000);
+    </script>
+    <script type="module">
+      import("/src/static-app.js").catch(function (error) {
+        var root = document.getElementById("root");
+        var message = error && error.message ? error.message : String(error);
+        if (root) {
+          root.innerHTML = [
+            '<main class="shell">',
+            '<section class="startup-panel error">',
+            '<p class="eyebrow">Module startup error</p>',
+            '<h1>Unable to start dashboard JavaScript</h1>',
+            '<p>' + escapeHtml(message) + '</p>',
+            '<p>Try a hard refresh. If this remains, open browser developer tools and check the Console for the module error.</p>',
+            '</section>',
+            '</main>'
+          ].join("");
+        }
+      });
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    </script>
   </body>
 </html>

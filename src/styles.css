@@ -100,6 +100,15 @@ textarea {
   background: #eef4f2;
 }
 
+.startup-hint {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid #e6c86c;
+  border-radius: 8px;
+  color: #604b12;
+  background: #fff8df;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: inherit;
