@@ -108,10 +108,22 @@ The dashboard can send the weekly stakeholder report to a server-side webhook wh
 
 This is designed for tools such as Power Automate, n8n, SendGrid, Make, or an enterprise mail gateway. The browser collects recipient addresses, but the actual delivery integration stays server-side. In the default configuration, no email is sent.
 
+## Render Deployment Note
+
+The dashboard frontend can run as a static Render site, but the optional `/api/llm/weekly-summary` and `/api/email/report` routes require a Render Node web service. This repo includes `render.yaml` and an `npm start` script for that mode.
+
+For a Render web service:
+
+- Build command: `npm install --omit=dev && npm run build`
+- Start command: `npm start`
+- Environment variable: `HOST=0.0.0.0`
+- Add `LLM_*` and `EMAIL_*` variables only when those bridges should be active.
+
 ## Commands
 
 ```bash
 npm.cmd run dev
+npm.cmd start
 npm.cmd run test
 npm.cmd run build
 npm.cmd run generate:data

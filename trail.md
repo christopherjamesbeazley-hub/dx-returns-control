@@ -59,6 +59,7 @@
 ## Pitch-Ready Polish Completed
 
 - Added `pitch.md` as a one-page business case.
+- Added `render.yaml` and an `npm start` script so Render can run the Node web service needed for optional API bridges.
 - Added CSV schema validation before upload replacement.
 - Added CSV template download.
 - Added friendly column alias mapping for spreadsheet-style headers.
