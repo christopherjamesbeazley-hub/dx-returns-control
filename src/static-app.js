@@ -1,4 +1,4 @@
-import * as analytics from "./lib/analytics.js?v=20260709-namespace-import";
+const analytics = await import(`./lib/analytics.js?v=20260709-${Date.now()}`);
 
 const {
   SNAPSHOT_DATE,
@@ -82,7 +82,7 @@ const state = {
 };
 
 async function boot() {
-  const response = await fetch("./src/data/returns.csv");
+  const response = await fetch(`./src/data/returns.csv?v=20260709-${Date.now()}`, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Unable to load returns CSV: HTTP ${response.status}`);
   }
