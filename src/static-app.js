@@ -1,4 +1,6 @@
-import {
+import * as analytics from "./lib/analytics.js?v=20260709-namespace-import";
+
+const {
   SNAPSHOT_DATE,
   buildEscalationDraft,
   buildAiNarrative,
@@ -30,7 +32,9 @@ import {
   serializeWorklistCsv,
   uniqueValues,
   validateReturnsCsv,
-} from "./lib/analytics.js?v=20260709-analytics-cache-fix";
+} = analytics;
+
+const dashboardSnapshotDate = SNAPSHOT_DATE ?? "2026-07-08";
 
 const root = document.getElementById("root");
 const roles = [
@@ -120,7 +124,7 @@ function render() {
     <main class="shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Synthetic prototype &middot; Snapshot ${SNAPSHOT_DATE}</p>
+          <p class="eyebrow">Synthetic prototype &middot; Snapshot ${dashboardSnapshotDate}</p>
           <h1>DX Returns Control</h1>
           <p class="subtitle">Assumption-led visibility layer for mixed returns, overdue control, high-value exposure, and stakeholder-ready reporting.</p>
         </div>
