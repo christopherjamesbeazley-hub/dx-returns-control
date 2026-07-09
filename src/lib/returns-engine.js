@@ -517,6 +517,20 @@ export function buildTrendSnapshots(enrichedReturns, snapshotDate = SNAPSHOT_DAT
   return snapshots;
 }
 
+export function buildOperationalSnapshot(enrichedReturns, date = SNAPSHOT_DATE, sourceName = "Loaded export") {
+  const current = calculateKpis(enrichedReturns);
+
+  return {
+    date,
+    sourceName,
+    openCount: current.openCount,
+    overdueCount: current.overdueCount,
+    highValueCount: current.highValueCount,
+    missingDueDateCount: current.missingDueDateCount,
+    overdueExposure: current.overdueExposure,
+  };
+}
+
 export function compareTrendSnapshots(trends) {
   return trends.slice(1).map((current, index) => {
     const previous = trends[index];

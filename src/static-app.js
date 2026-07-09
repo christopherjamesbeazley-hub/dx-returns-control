@@ -7,6 +7,7 @@ const {
   buildForecastNarrative,
   buildIssueSummary,
   buildLlmBrief,
+  buildOperationalSnapshot,
   buildSnapshotComparisonNarrative,
   buildReturnCsvTemplate,
   buildStakeholderReport,
@@ -44,41 +45,52 @@ const roles = [
   ["snapshots", "Snapshots", "Snapshot comparison, movement direction, and report distribution."],
 ];
 
+const defaultFilters = {
+  market: "All",
+  partner: "All",
+  status: "All",
+  slaState: "All",
+  search: "",
+};
+
+const defaultRoiInputs = {
+  hoursSavedPerWeek: 8,
+  hourlyCost: 65,
+  overdueReductionPercent: 12,
+  annualOverdueExposure: 1200000,
+  recoveryImprovementPercent: 4,
+};
+
+const defaultLlmState = {
+  status: "idle",
+  output: "",
+  error: "",
+  model: "",
+};
+
+const defaultEmailState = {
+  recipients: "",
+  subject: "DX Returns Weekly Control Report",
+  status: "idle",
+  message: "",
+  error: "",
+};
+
 const state = {
   activeRole: "manager",
-  filters: {
-    market: "All",
-    partner: "All",
-    status: "All",
-    slaState: "All",
-    search: "",
-  },
+  filters: { ...defaultFilters },
   page: 1,
   pageSize: 25,
-  roiInputs: {
-    hoursSavedPerWeek: 8,
-    hourlyCost: 65,
-    overdueReductionPercent: 12,
-    annualOverdueExposure: 1200000,
-    recoveryImprovementPercent: 4,
-  },
+  roiInputs: { ...defaultRoiInputs },
   returns: [],
   sourceName: "Synthetic demo CSV",
   loadError: "",
   validation: null,
-  llm: {
-    status: "idle",
-    output: "",
-    error: "",
-    model: "",
-  },
-  email: {
-    recipients: "",
-    subject: "DX Returns Weekly Control Report",
-    status: "idle",
-    message: "",
-    error: "",
-  },
+  uploadSnapshots: [],
+  currentLlmBrief: null,
+  demoCsv: "",
+  llm: { ...defaultLlmState },
+  email: { ...defaultEmailState },
 };
 
 async function loadAnalyticsModule() {
@@ -111,6 +123,36 @@ function isValidAnalyticsModule(module) {
   return typeof module.parseReturnsCsv === "function" && typeof module.calculateKpis === "function";
 }
 
+function getDashboardTrendSnapshots() {
+  if (state.uploadSnapshots.length) {
+    return state.uploadSnapshots;
+  }
+
+  return state.returns.length ? buildTrendSnapshots(state.returns) : [];
+}
+
+function getSnapshotControlNote() {
+  if (state.uploadSnapshots.length >= 2) {
+    return `${state.uploadSnapshots.length} uploaded snapshots are being compared in this browser session. Erase all clears this upload history before starting a new sequence.`;
+  }
+
+  if (state.uploadSnapshots.length === 1) {
+    return "One uploaded snapshot is loaded. Upload the next CSV export to compare movement against this file.";
+  }
+
+  if (state.returns.length) {
+    return "Demo trend lines are generated from the current synthetic export for presentation purposes. Upload CSV files to create real in-session snapshot comparisons.";
+  }
+
+  return "No snapshot data is loaded. Upload a CSV file to start a clean snapshot sequence.";
+}
+
+function getLocalSnapshotLabel() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
 async function boot() {
   const response = await fetch(`./src/data/returns.csv?v=20260709-${Date.now()}`, { cache: "no-store" });
   if (!response.ok) {
@@ -122,7 +164,9 @@ async function boot() {
   }
   state.returns = enrichReturns(parseReturnsCsv(csv));
   state.demoCsv = csv;
+  state.sourceName = "Synthetic demo CSV";
   state.validation = validateReturnsCsv(csv);
+  state.uploadSnapshots = [];
   render();
 }
 
@@ -138,9 +182,10 @@ function render() {
   const stakeholderReport = buildStakeholderReport({ kpis, marketBreakdown, partnerPerformance, worklist });
   const delayThemes = getDelayThemes(state.returns);
   const aiNarrative = buildAiNarrative({ kpis, themes: delayThemes, marketBreakdown, worklist });
-  const trends = buildTrendSnapshots(state.returns);
+  const trends = getDashboardTrendSnapshots();
   const snapshotComparison = compareTrendSnapshots(trends);
   const snapshotNarrative = buildSnapshotComparisonNarrative(snapshotComparison);
+  const snapshotNote = getSnapshotControlNote();
   const riskForecast = getPrioritizedRiskForecast(state.returns, delayThemes);
   const warnings = getEarlyWarnings({ marketBreakdown, partnerPerformance, themes: delayThemes, riskForecast });
   const improvementActions = getContinuousImprovementActions({ kpis, themes: delayThemes, partnerPerformance });
@@ -188,8 +233,8 @@ function render() {
 
       ${state.activeRole === "manager" ? managerView({ aiNarrative, delayThemes, digest, emailState: state.email, filteredReturns, forecastNarrative, kpis, llmState: state.llm, paginatedReturns, riskForecast, stakeholderReport, worklist }) : ""}
       ${state.activeRole === "coordinator" ? coordinatorView({ filteredReturns, paginatedReturns, worklist }) : ""}
-      ${state.activeRole === "leadership" ? leadershipView({ aiNarrative, delayThemes, digest, emailState: state.email, forecastNarrative, improvementActions, kpis, llmState: state.llm, marketBreakdown, partnerPerformance, riskForecast, roi, snapshotComparison, snapshotNarrative, stakeholderReport, trends, warnings, worklist }) : ""}
-      ${state.activeRole === "snapshots" ? snapshotView({ emailState: state.email, llmState: state.llm, snapshotComparison, snapshotNarrative, stakeholderReport, trends }) : ""}
+      ${state.activeRole === "leadership" ? leadershipView({ aiNarrative, delayThemes, digest, emailState: state.email, forecastNarrative, improvementActions, kpis, llmState: state.llm, marketBreakdown, partnerPerformance, riskForecast, roi, snapshotComparison, snapshotNarrative, snapshotNote, stakeholderReport, trends, warnings, worklist }) : ""}
+      ${state.activeRole === "snapshots" ? snapshotView({ emailState: state.email, llmState: state.llm, snapshotComparison, snapshotNarrative, snapshotNote, stakeholderReport, trends }) : ""}
     </main>
   `;
 
@@ -212,7 +257,7 @@ function dataControls() {
       <div>
         <p class="eyebrow">Phase 2 automation</p>
         <strong>${escapeHtml(state.sourceName)}</strong>
-        <span>${state.returns.length ? `${state.returns.length} rows loaded. Upload replaces the in-memory dataset only.` : "Session is empty. Upload a CSV to rebuild the dashboard, or refresh the page to reload the demo dataset."}</span>
+        <span>${state.returns.length ? `${state.returns.length} rows loaded. Upload replaces the active dataset and adds a snapshot point.` : "Session is empty. Upload a CSV to rebuild the dashboard, or refresh the page to reload the demo dataset."}</span>
         ${validation ? validationSummary(validation) : ""}
         ${state.loadError ? `<em>${escapeHtml(state.loadError)}</em>` : ""}
       </div>
@@ -349,11 +394,11 @@ function coordinatorView({ filteredReturns, paginatedReturns, worklist }) {
   `;
 }
 
-function leadershipView({ aiNarrative, delayThemes, digest, emailState, forecastNarrative, improvementActions, kpis, llmState, marketBreakdown, partnerPerformance, riskForecast, roi, snapshotComparison, snapshotNarrative, stakeholderReport, trends, warnings, worklist }) {
+function leadershipView({ aiNarrative, delayThemes, digest, emailState, forecastNarrative, improvementActions, kpis, llmState, marketBreakdown, partnerPerformance, riskForecast, roi, snapshotComparison, snapshotNarrative, snapshotNote, stakeholderReport, trends, warnings, worklist }) {
   const highValueItems = worklist.filter((item) => item.highValue).slice(0, 5);
 
   return `
-    ${phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, snapshotComparison, snapshotNarrative, trends, warnings })}
+    ${phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, snapshotComparison, snapshotNarrative, snapshotNote, trends, warnings })}
     ${roiPanel(roi)}
     <section class="two-column">
       ${weeklyDigest(digest, true)}
@@ -386,14 +431,14 @@ function leadershipView({ aiNarrative, delayThemes, digest, emailState, forecast
   `;
 }
 
-function snapshotView({ emailState, llmState, snapshotComparison, snapshotNarrative, stakeholderReport, trends }) {
+function snapshotView({ emailState, llmState, snapshotComparison, snapshotNarrative, snapshotNote, stakeholderReport, trends }) {
   return `
-    ${snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends, expanded: true })}
+    ${snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, snapshotNote, trends, expanded: true })}
     ${externalLlmPanel(llmState)}
     ${emailDeliveryPanel(emailState)}
     ${reportPanel(stakeholderReport)}
     <section class="assumption-strip">
-      <strong>Snapshot control note:</strong> comparison values are generated from the current loaded export and synthetic snapshot logic. In a real rollout, these would come from stored daily or weekly historical snapshots.
+      <strong>Snapshot control note:</strong> ${escapeHtml(snapshotNote)}
     </section>
   `;
 }
@@ -443,7 +488,7 @@ function phase4CompactPanel({ forecastNarrative, riskForecast }) {
   `;
 }
 
-function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, snapshotComparison, snapshotNarrative, trends, warnings }) {
+function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForecast, snapshotComparison, snapshotNarrative, snapshotNote, trends, warnings }) {
   return `
     <section class="panel forecast-panel">
       <div class="panel-heading">
@@ -451,7 +496,7 @@ function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForeca
         <span class="glyph">F4</span>
       </div>
       <p class="forecast-narrative">${escapeHtml(forecastNarrative)}</p>
-      ${snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends })}
+      ${snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, snapshotNote, trends })}
       <div class="three-column phase4-grid">
         ${warningPanel(warnings)}
         ${improvementPanel(improvementActions)}
@@ -468,7 +513,7 @@ function phase4ForecastPanel({ forecastNarrative, improvementActions, riskForeca
   `;
 }
 
-function snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends, expanded = false }) {
+function snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, snapshotNote, trends, expanded = false }) {
   const latest = snapshotComparison.at(-1);
   const comparisons = expanded ? snapshotComparison : snapshotComparison.slice(-2);
 
@@ -479,6 +524,7 @@ function snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends
         ${latest ? `<span class="delta-badge ${latest.overallDirection}">${escapeHtml(latest.overallDirection)}</span>` : `<span class="delta-badge stable">stable</span>`}
       </div>
       <p class="snapshot-narrative">${escapeHtml(snapshotNarrative)}</p>
+      <p class="snapshot-narrative">${escapeHtml(snapshotNote)}</p>
       <div class="snapshot-grid">
         ${trendPanel(trends)}
         <div class="forecast-card">
@@ -487,7 +533,7 @@ function snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends
             <table>
               <thead><tr><th>Period</th><th>Metric</th><th>Previous</th><th>Current</th><th>Move</th></tr></thead>
               <tbody>
-                ${comparisons.flatMap((comparison) =>
+                ${comparisons.length ? comparisons.flatMap((comparison) =>
                   comparison.metrics.map((metric) => `
                     <tr>
                       <td><strong>${escapeHtml(comparison.fromDate)}</strong><small>to ${escapeHtml(comparison.toDate)}</small></td>
@@ -497,7 +543,7 @@ function snapshotComparisonPanel({ snapshotComparison, snapshotNarrative, trends
                       <td><span class="delta-badge ${metric.direction}">${formatDelta(metric)}</span></td>
                     </tr>
                   `),
-                ).join("")}
+                ).join("") : `<tr><td colspan="5">Upload at least two CSV exports to create a comparison ledger.</td></tr>`}
               </tbody>
             </table>
           </div>
@@ -513,12 +559,12 @@ function trendPanel(trends) {
     <div class="forecast-card">
       <h3>Trend snapshots</h3>
       <ul class="trend-list">
-        ${trends.map((trend) => `
+        ${trends.length ? trends.map((trend) => `
           <li>
-            <div><strong>${trend.date}</strong><span>${trend.overdueCount} overdue &middot; ${trend.openCount} open</span></div>
+            <div><strong>${trend.date}</strong><span>${trend.overdueCount} overdue &middot; ${trend.openCount} open${trend.sourceName ? ` &middot; ${escapeHtml(trend.sourceName)}` : ""}</span></div>
             <div class="bar-track"><span style="width: ${Math.max(8, (trend.overdueCount / maxOverdue) * 100)}%"></span></div>
           </li>
-        `).join("")}
+        `).join("") : `<li><div><strong>No snapshots</strong><span>Upload a CSV file to start a fresh comparison trail.</span></div></li>`}
       </ul>
     </div>
   `;
@@ -986,9 +1032,16 @@ async function handleCsvUpload(event) {
     if (!parsed.length) throw new Error("No return records found.");
     state.returns = enrichReturns(parsed);
     state.sourceName = file.name;
+    state.uploadSnapshots = [
+      ...state.uploadSnapshots,
+      buildOperationalSnapshot(state.returns, getLocalSnapshotLabel(), file.name),
+    ];
     state.loadError = "";
     state.page = 1;
-    state.filters = { market: "All", partner: "All", status: "All", slaState: "All", search: "" };
+    state.filters = { ...defaultFilters };
+    state.llm = { ...defaultLlmState };
+    state.email = { ...state.email, status: "idle", message: "", error: "" };
+    state.currentLlmBrief = null;
   } catch (error) {
     state.loadError = `Upload failed: ${error.message}`;
   }
@@ -1001,12 +1054,19 @@ function downloadTemplate() {
 }
 
 function eraseSessionData() {
+  state.activeRole = "manager";
   state.returns = [];
   state.sourceName = "Empty session";
   state.loadError = "";
   state.validation = null;
   state.page = 1;
-  state.filters = { market: "All", partner: "All", status: "All", slaState: "All", search: "" };
+  state.filters = { ...defaultFilters };
+  state.roiInputs = { ...defaultRoiInputs };
+  state.uploadSnapshots = [];
+  state.currentLlmBrief = null;
+  state.demoCsv = "";
+  state.llm = { ...defaultLlmState };
+  state.email = { ...defaultEmailState };
   render();
 }
 
@@ -1106,7 +1166,7 @@ function buildCurrentLlmBrief() {
   const partnerPerformance = getPartnerPerformance(state.returns);
   const themes = getDelayThemes(state.returns);
   const promptFindings = getPromptSecurityFindings(state.returns);
-  const snapshotComparison = compareTrendSnapshots(buildTrendSnapshots(state.returns));
+  const snapshotComparison = compareTrendSnapshots(getDashboardTrendSnapshots());
   return buildLlmBrief({ kpis, themes, marketBreakdown, partnerPerformance, worklist, snapshotComparison, promptFindings });
 }
 

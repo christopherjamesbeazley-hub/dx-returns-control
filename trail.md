@@ -70,6 +70,15 @@
 - Removed the external hero image dependency and replaced it with local CSS visual styling.
 - Added tests for schema validation, filtering, pagination, and ROI.
 
+## v1.1 Session Reset And Snapshot Hardening
+
+- Renamed the browser-facing analytics module to `returns-engine.js` to avoid privacy-tool blocking of `analytics.js`.
+- Changed successful CSV uploads so each file replaces the active dataset and adds one in-session snapshot point.
+- Changed snapshot comparison to use uploaded snapshot history when uploads exist, with synthetic demo trends used only for the built-in demo dataset.
+- Strengthened Erase all so it clears the active dataset, filters, ROI assumptions, upload snapshot history, generated LLM evidence, LLM output, email status, and recipient fields.
+- Added empty-state copy so a clean reset no longer presents stale or synthetic snapshot information.
+- Bumped the package version to `1.1.0`.
+
 ## Data Generation
 
 - The first 25 records are hand-authored synthetic seed records.

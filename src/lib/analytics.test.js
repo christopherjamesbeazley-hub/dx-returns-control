@@ -8,6 +8,7 @@ import {
   buildForecastNarrative,
   buildIssueSummary,
   buildLlmBrief,
+  buildOperationalSnapshot,
   buildSnapshotComparisonNarrative,
   buildReturnCsvTemplate,
   buildStakeholderReport,
@@ -246,6 +247,18 @@ test("builds Phase 4 trend snapshots", () => {
   assert.equal(trends.at(-1).date, SNAPSHOT_DATE);
   assert.equal(trends.at(-1).overdueCount, seedKpis.overdueCount);
   assert.ok(trends[0].overdueExposure >= trends.at(-1).overdueExposure);
+});
+
+test("builds upload snapshots from the exact loaded dataset", () => {
+  const snapshot = buildOperationalSnapshot(seedEnriched, "2026-07-09 10:30", "day-two-upload.csv");
+
+  assert.equal(snapshot.date, "2026-07-09 10:30");
+  assert.equal(snapshot.sourceName, "day-two-upload.csv");
+  assert.equal(snapshot.openCount, seedKpis.openCount);
+  assert.equal(snapshot.overdueCount, seedKpis.overdueCount);
+  assert.equal(snapshot.highValueCount, seedKpis.highValueCount);
+  assert.equal(snapshot.missingDueDateCount, seedKpis.missingDueDateCount);
+  assert.equal(snapshot.overdueExposure, seedKpis.overdueExposure);
 });
 
 test("compares snapshots with positive and negative movement labels", () => {
