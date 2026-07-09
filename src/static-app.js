@@ -1,4 +1,4 @@
-const analytics = await import(`./lib/analytics.js?v=20260709-${Date.now()}`);
+const analytics = await loadAnalyticsModule();
 
 const {
   SNAPSHOT_DATE,
@@ -80,6 +80,36 @@ const state = {
     error: "",
   },
 };
+
+async function loadAnalyticsModule() {
+  const version = `20260709-self-healing-${Date.now()}`;
+  const modulePath = `./lib/analytics.js?v=${version}`;
+  const loaded = await import(modulePath);
+  if (isValidAnalyticsModule(loaded)) {
+    return loaded;
+  }
+
+  const response = await fetch(`/src/lib/analytics.js?v=${version}`, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Analytics module was incomplete and source reload failed: HTTP ${response.status}`);
+  }
+
+  const source = await response.text();
+  const blobUrl = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+  try {
+    const reloaded = await import(blobUrl);
+    if (isValidAnalyticsModule(reloaded)) {
+      return reloaded;
+    }
+    throw new Error(`Analytics module reload was incomplete. Available exports: ${Object.keys(reloaded).join(", ") || "none"}`);
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
+function isValidAnalyticsModule(module) {
+  return typeof module.parseReturnsCsv === "function" && typeof module.calculateKpis === "function";
+}
 
 async function boot() {
   const response = await fetch(`./src/data/returns.csv?v=20260709-${Date.now()}`, { cache: "no-store" });
