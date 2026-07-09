@@ -85,6 +85,7 @@ const state = {
   returns: [],
   sourceName: "Synthetic demo CSV",
   loadError: "",
+  uploadMessage: "",
   validation: null,
   uploadSnapshots: [],
   currentLlmBrief: null,
@@ -259,6 +260,7 @@ function dataControls() {
         <strong>${escapeHtml(state.sourceName)}</strong>
         <span>${state.returns.length ? `${state.returns.length} rows loaded. Upload replaces the active dataset and adds a snapshot point.` : "Session is empty. Upload a CSV to rebuild the dashboard, or refresh the page to reload the demo dataset."}</span>
         ${validation ? validationSummary(validation) : ""}
+        ${state.uploadMessage ? `<span class="validation-ok">${escapeHtml(state.uploadMessage)}</span>` : ""}
         ${state.loadError ? `<em>${escapeHtml(state.loadError)}</em>` : ""}
       </div>
       <div class="automation-actions">
@@ -1015,7 +1017,8 @@ function bindEvents() {
 }
 
 async function handleCsvUpload(event) {
-  const [file] = event.target.files;
+  const input = event.target;
+  const [file] = input.files;
   if (!file) return;
 
   try {
@@ -1037,6 +1040,7 @@ async function handleCsvUpload(event) {
       buildOperationalSnapshot(state.returns, getLocalSnapshotLabel(), file.name),
     ];
     state.loadError = "";
+    state.uploadMessage = `Last upload processed: ${file.name}, ${parsed.length} rows, snapshot ${state.uploadSnapshots.length} captured.`;
     state.page = 1;
     state.filters = { ...defaultFilters };
     state.llm = { ...defaultLlmState };
@@ -1044,6 +1048,9 @@ async function handleCsvUpload(event) {
     state.currentLlmBrief = null;
   } catch (error) {
     state.loadError = `Upload failed: ${error.message}`;
+    state.uploadMessage = "";
+  } finally {
+    input.value = "";
   }
 
   render();
@@ -1058,6 +1065,7 @@ function eraseSessionData() {
   state.returns = [];
   state.sourceName = "Empty session";
   state.loadError = "";
+  state.uploadMessage = "";
   state.validation = null;
   state.page = 1;
   state.filters = { ...defaultFilters };

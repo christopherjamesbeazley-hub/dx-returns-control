@@ -79,6 +79,13 @@
 - Added empty-state copy so a clean reset no longer presents stale or synthetic snapshot information.
 - Bumped the package version to `1.1.0`.
 
+## v1.1.1 Upload Refresh Hotfix
+
+- Bumped the browser entrypoint cache key so browsers load the latest reset and snapshot logic instead of a stale `static-app.js` module.
+- Cleared the file picker after every upload attempt so a revised CSV with the same filename can be uploaded again and still trigger recalculation.
+- Added visible upload confirmation with filename, row count, and captured snapshot number.
+- Bumped the package version to `1.1.1`.
+
 ## Data Generation
 
 - The first 25 records are hand-authored synthetic seed records.
