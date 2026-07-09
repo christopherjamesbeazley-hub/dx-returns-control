@@ -79,7 +79,13 @@ const state = {
 
 async function boot() {
   const response = await fetch("./src/data/returns.csv");
+  if (!response.ok) {
+    throw new Error(`Unable to load returns CSV: HTTP ${response.status}`);
+  }
   const csv = await response.text();
+  if (!csv.trim()) {
+    throw new Error("Returns CSV loaded but was empty.");
+  }
   state.returns = enrichReturns(parseReturnsCsv(csv));
   state.demoCsv = csv;
   state.validation = validateReturnsCsv(csv);
@@ -1119,5 +1125,14 @@ function escapeHtml(value) {
 }
 
 boot().catch((error) => {
-  root.innerHTML = `<main class="shell"><section class="panel"><h1>Unable to load dashboard</h1><p>${escapeHtml(error.message)}</p></section></main>`;
+  root.innerHTML = `
+    <main class="shell">
+      <section class="startup-panel error">
+        <p class="eyebrow">Startup error</p>
+        <h1>Unable to load dashboard</h1>
+        <p>${escapeHtml(error.message)}</p>
+        <p>Try a hard refresh first. If this is on Render, confirm the deployed service can serve <code>/src/static-app.js</code> and <code>/src/data/returns.csv</code>.</p>
+      </section>
+    </main>
+  `;
 });

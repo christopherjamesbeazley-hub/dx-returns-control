@@ -69,6 +69,37 @@ textarea {
   z-index: 1;
 }
 
+.startup-panel {
+  max-width: 760px;
+  margin: 12vh auto 0;
+  padding: 28px;
+  border: 1px solid rgba(190, 207, 202, 0.9);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 36px rgba(32, 57, 62, 0.08);
+}
+
+.startup-panel h1 {
+  margin-bottom: 12px;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.startup-panel p {
+  color: #52616a;
+  line-height: 1.55;
+}
+
+.startup-panel.error {
+  border-color: #e0b5ad;
+  background: #fffafa;
+}
+
+.startup-panel code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #eef4f2;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: inherit;

@@ -4,9 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DX Returns Control</title>
+    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main class="shell">
+        <section class="startup-panel">
+          <p class="eyebrow">DX Returns Control</p>
+          <h1>Loading dashboard</h1>
+          <p>If this message stays on screen, the browser could not start the dashboard JavaScript or load the returns dataset.</p>
+        </section>
+      </main>
+    </div>
+    <noscript>
+      <main class="shell">
+        <section class="startup-panel">
+          <p class="eyebrow">JavaScript required</p>
+          <h1>DX Returns Control needs JavaScript enabled</h1>
+          <p>This prototype runs entirely in the browser and needs JavaScript to load the CSV and render the dashboard.</p>
+        </section>
+      </main>
+    </noscript>
     <script type="module" src="/src/static-app.js"></script>
   </body>
 </html>
