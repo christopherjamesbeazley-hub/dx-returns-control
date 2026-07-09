@@ -114,7 +114,7 @@ The dashboard frontend can run as a static Render site, but the optional `/api/l
 
 For a Render web service:
 
-- Build command: `npm install --omit=dev && npm run build`
+- Build command: `npm run build`
 - Start command: `npm start`
 - Environment variable: `HOST=0.0.0.0`
 - Add `LLM_*` and `EMAIL_*` variables only when those bridges should be active.
