@@ -30,7 +30,7 @@ import {
   serializeWorklistCsv,
   uniqueValues,
   validateReturnsCsv,
-} from "./lib/analytics.js";
+} from "./lib/analytics.js?v=20260709-analytics-cache-fix";
 
 const root = document.getElementById("root");
 const roles = [
